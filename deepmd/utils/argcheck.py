@@ -1184,6 +1184,7 @@ def fitting_property():
     doc_precision = f"The precision of the fitting net parameters, supported options are {list_to_doc(PRECISION_DICT.keys())} Default follows the interface precision."
     doc_seed = "Random seed for parameter initialization of the fitting net"
     doc_task_dim = "The dimension of outputs of fitting net"
+    doc_intensive = "If it is true, the final properties will be divided by natoms"
     return [
         Argument(
             "neuron",
@@ -1204,6 +1205,7 @@ def fitting_property():
         Argument("precision", str, optional=True, default="default", doc=doc_precision),
         Argument("seed", [int, None], optional=True, doc=doc_seed),
         Argument("task_dim", int, optional=True, default=1, doc=doc_task_dim),
+        Argument("intensive", bool, optional=True, default=True, doc=doc_intensive)
     ]
 
 
