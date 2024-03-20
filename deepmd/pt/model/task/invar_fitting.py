@@ -192,7 +192,7 @@ class InvarFitting(GeneralFitting):
         fparam: Optional[torch.Tensor] = None,
         aparam: Optional[torch.Tensor] = None,
     ):
-        """Based on embedding net output, alculate total energy.
+        """Based on embedding net output, calculate total energy.
 
         Args:
         - inputs: Embedding matrix. Its shape is [nframes, natoms[0], self.dim_descrpt].
