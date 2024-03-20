@@ -210,6 +210,8 @@ def test(
             print_polar_sys_avg(avg_err)
         elif isinstance(dp, DeepGlobalPolar):
             print_wfc_sys_avg(avg_err)
+        elif isinstance(dp, DeepProperty):
+            print_property_sys_avg(avg_err)
         log.info("# ----------------------------------------------- ")
 
 
@@ -750,7 +752,7 @@ def test_property(
     system: str,
     numb_test: int,
     detail_file: Optional[str],
-    has_atom_dos: bool,
+    has_atom_property: bool,
     append_detail: bool = False,
 ) -> Tuple[List[np.ndarray], List[int]]:
     """Test DOS type model.
@@ -767,7 +769,7 @@ def test_property(
         munber of tests to do
     detail_file : Optional[str]
         file where test details will be output
-    has_atom_dos : bool
+    has_atom_property : bool
         whether per atom quantities should be computed
     append_detail : bool, optional
         if true append output detail file, by default False
@@ -777,10 +779,9 @@ def test_property(
     Tuple[List[np.ndarray], List[int]]
         arrays with results and their shapes
     """
-    log.info(dp.numb_task)
-    data.add("dos", dp.numb_dos, atomic=False, must=True, high_prec=True)
-    if has_atom_dos:
-        data.add("atom_dos", dp.numb_dos, atomic=True, must=False, high_prec=True)
+    data.add("property", dp.numb_task, atomic=False, must=True, high_prec=True)
+    if has_atom_property:
+        data.add("atom_PROPERTY", dp.numb_task, atomic=True, must=False, high_prec=True)
 
     if dp.get_dim_fparam() > 0:
         data.add(
@@ -794,8 +795,11 @@ def test_property(
     natoms = len(test_data["type"][0])
     nframes = test_data["box"].shape[0]
     numb_test = min(nframes, numb_test)
-
-    coord = test_data["coord"][:numb_test].reshape([numb_test, -1])
+ 
+    if data.multistru:
+        coord = test_data["coord"][:numb_test, 0, :].reshape([numb_test, -1])
+    else:
+        coord = test_data["coord"][:numb_test].reshape([numb_test, -1])
     box = test_data["box"][:numb_test]
 
     if not data.pbc:
@@ -819,40 +823,41 @@ def test_property(
         atype,
         fparam=fparam,
         aparam=aparam,
-        atomic=has_atom_dos,
+        atomic=has_atom_property,
         mixed_type=mixed_type,
     )
-    dos = ret[0]
+    property = ret[0]
+    property = property * 222.8902092792289 + -1544.8360893118609
+    property = property.reshape([numb_test, dp.numb_task])
 
-    dos = dos.reshape([numb_test, dp.numb_dos])
+    if has_atom_property:
+        aproperty = ret[1]
+        aproperty = aproperty.reshape([numb_test, natoms * dp.numb_task])
 
-    if has_atom_dos:
-        ados = ret[1]
-        ados = ados.reshape([numb_test, natoms * dp.numb_dos])
+    diff_property = property - test_data["property"][:numb_test]
+    mae_property = mae(diff_property)
+    rmse_property = rmse(diff_property)
 
-    diff_dos = dos - test_data["dos"][:numb_test]
-    mae_dos = mae(diff_dos)
-    rmse_dos = rmse(diff_dos)
+    mae_propertya = mae_property / natoms
+    rmse_propertya = rmse_property / natoms
 
-    mae_dosa = mae_dos / natoms
-    rmse_dosa = rmse_dos / natoms
-
-    if has_atom_dos:
-        diff_ados = ados - test_data["atom_dos"][:numb_test]
-        mae_ados = mae(diff_ados)
-        rmse_ados = rmse(diff_ados)
+    if has_atom_property:
+        diff_aproperty = aproperty - test_data["atom_property"][:numb_test]
+        mae_aproperty = mae(diff_aproperty)
+        rmse_aproperty = rmse(diff_aproperty)
 
     log.info(f"# number of test data : {numb_test:d} ")
 
-    log.info(f"DOS MAE            : {mae_dos:e} Occupation/eV")
-    log.info(f"DOS RMSE           : {rmse_dos:e} Occupation/eV")
-    log.info(f"DOS MAE/Natoms     : {mae_dosa:e} Occupation/eV")
-    log.info(f"DOS RMSE/Natoms    : {rmse_dosa:e} Occupation/eV")
+    log.info(f"PROPERTY MAE            : {mae_property:e} Occupation/eV")
+    log.info(f"PROPERTY RMSE           : {rmse_property:e} Occupation/eV")
+    log.info(f"PROPERTY MAE/Natoms     : {mae_propertya:e} Occupation/eV")
+    log.info(f"PROPERTY RMSE/Natoms    : {rmse_propertya:e} Occupation/eV")
 
-    if has_atom_dos:
-        log.info(f"Atomic DOS MAE     : {mae_ados:e} Occupation/eV")
-        log.info(f"Atomic DOS RMSE    : {rmse_ados:e} Occupation/eV")
-
+    if has_atom_property:
+        log.info(f"Atomic PROPERTY MAE     : {mae_aproperty:e} Occupation/eV")
+        log.info(f"Atomic PROPERTY RMSE    : {rmse_aproperty:e} Occupation/eV")
+    
+    '''
     if detail_file is not None:
         detail_path = Path(detail_file)
 
@@ -882,13 +887,31 @@ def test_property(
                     header="%s - %.d: data_ados pred_ados" % (system, ii),
                     append=append_detail,
                 )
-
+    '''
     return {
-        "mae_dos": (mae_dos, dos.size),
-        "mae_dosa": (mae_dosa, dos.size),
-        "rmse_dos": (rmse_dos, dos.size),
-        "rmse_dosa": (rmse_dosa, dos.size),
+        "mae_property": (mae_property, property.size),
+        "mae_propertya": (mae_propertya, property.size),
+        "rmse_property": (rmse_property, property.size),
+        "rmse_propertya": (rmse_propertya, property.size),
     }
+
+def print_property_sys_avg(avg: Dict[str, float]):
+    """Print errors summary for property type potential.
+
+    Parameters
+    ----------
+    avg : np.ndarray
+        array with summaries
+    """
+    with open("test2.txt","a") as f:
+        f.write(f"PROPERTY MAE            : {avg['mae_property']:e} Occupation/eV\n")
+        f.write(f"PROPERTY RMSE           : {avg['rmse_property']:e} Occupation/eV\n")
+        f.write(f"PROPERTY MAE/Natoms     : {avg['mae_propertya']:e} Occupation/eV\n")
+        f.write(f"PROPERTY RMSE/Natoms    : {avg['rmse_propertya']:e} Occupation/eV")
+    log.info(f"PROPERTY MAE            : {avg['mae_property']:e} Occupation/eV")
+    log.info(f"PROPERTY RMSE           : {avg['rmse_property']:e} Occupation/eV")
+    log.info(f"PROPERTY MAE/Natoms     : {avg['mae_propertya']:e} Occupation/eV")
+    log.info(f"PROPERTY RMSE/Natoms    : {avg['rmse_propertya']:e} Occupation/eV")
 
 def print_dos_sys_avg(avg: Dict[str, float]):
     """Print errors summary for DOS type potential.

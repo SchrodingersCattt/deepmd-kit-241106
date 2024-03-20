@@ -58,7 +58,6 @@ class DeepProperty(DeepEval):
 
     @property
     def numb_task(self) -> int:
-        """Get the number of task."""
         return self.get_numb_task()
 
     def eval(
@@ -119,7 +118,7 @@ class DeepProperty(DeepEval):
             **kwargs,
         )
         atomic_property = results["property"].reshape(nframes, natoms, -1)
-        property = np.sum(atomic_property, axis=1)
+        property = results["property_redu"].reshape(nframes, -1)
 
         if atomic:
             return (
@@ -128,9 +127,8 @@ class DeepProperty(DeepEval):
             )
         else:
             return (property,)
-
+    
     def get_numb_task(self) -> int:
         return self.deep_eval.get_numb_task()
-
 
 __all__ = ["DeepProperty"]

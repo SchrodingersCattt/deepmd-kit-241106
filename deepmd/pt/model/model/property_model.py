@@ -50,6 +50,11 @@ class PropertyModel(DPModel):
         return model_predict
 
     @torch.jit.export
+    def get_numb_task(self) -> int:
+        """Get the number of  tasks for PropertyFittingNet."""
+        return self.get_fitting_net().dim_out
+    
+    @torch.jit.export
     def forward_lower(
         self,
         extended_coord,

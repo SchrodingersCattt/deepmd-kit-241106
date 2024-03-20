@@ -186,7 +186,8 @@ class DeepEval(DeepEvalBackend):
         return 0
 
     def get_numb_task(self) -> int:
-        """Get the """
+        """Get the number of tasks"""
+        return self.dp.model["Default"].get_numb_task()
 
     def get_has_efield(self):
         """Check if the model has efield."""
