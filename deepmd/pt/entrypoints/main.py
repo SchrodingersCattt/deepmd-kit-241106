@@ -127,7 +127,7 @@ def get_trainer(
             if not Path(stat_file_path_single).is_file():
                 with h5py.File(stat_file_path_single, "w") as f:
                     pass
-            stat_file_path_single = DPPath(stat_file_path_single, "a")
+            stat_file_path_single = DPPath(stat_file_path_single, "r")
 
         # validation and training data
         validation_data_single = (

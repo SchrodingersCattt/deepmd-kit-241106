@@ -185,6 +185,9 @@ class DeepEval(DeepEvalBackend):
         """Get the number of DOS."""
         return 0
 
+    def get_numb_task(self) -> int:
+        """Get the """
+
     def get_has_efield(self):
         """Check if the model has efield."""
         return False

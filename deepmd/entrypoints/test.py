@@ -777,6 +777,7 @@ def test_property(
     Tuple[List[np.ndarray], List[int]]
         arrays with results and their shapes
     """
+    log.info(dp.numb_task)
     data.add("dos", dp.numb_dos, atomic=False, must=True, high_prec=True)
     if has_atom_dos:
         data.add("atom_dos", dp.numb_dos, atomic=True, must=False, high_prec=True)
