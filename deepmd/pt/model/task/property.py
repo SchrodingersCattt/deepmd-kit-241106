@@ -92,6 +92,7 @@ class PropertyFittingNet(InvarFitting):
         precision: str = DEFAULT_PRECISION,
         mixed_types: bool = True,
         seed: Optional[int] = None,
+        atom_prop: Optional[list[float]] = None,
         **kwargs,
     ):
         self.task_dim = task_dim
@@ -112,6 +113,7 @@ class PropertyFittingNet(InvarFitting):
             precision=precision,
             mixed_types=mixed_types,
             seed=seed,
+            atom_ener=atom_prop,
             **kwargs,
         )
 
@@ -161,10 +163,12 @@ class PropertyFittingNet(InvarFitting):
             The path to the stat file.
 
         """
+        pass
+        '''
         bias_atom_p = compute_output_stats_prop(
             merged, self.ntypes, stat_file_path, self.rcond, self.atom_prop, self.intensive
         )
         self.bias_atom_e.copy_(bias_atom_p.view([self.ntypes, self.dim_out]))
-
+        '''
     # make jit happy with torch 2.0.0
     exclude_types: List[int]

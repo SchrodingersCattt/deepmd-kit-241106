@@ -2226,6 +2226,26 @@ def mixed_precision_args():  # ! added by Denghui.
         doc=doc_mixed_precision,
     )
 
+def wandb_config_args():  # ! added by Denghui.
+    args = [
+        Argument(
+            "wandb_enabled", bool, optional=True,
+        ),
+        Argument(
+            "entity", str, optional=True,
+        ),
+        Argument(
+            "project", str, optional=True,
+        ),
+    ]
+
+    return Argument(
+        "wandb_config",
+        dict,
+        optional=True,
+        sub_fields=args,
+        sub_variants=[],
+    )
 
 def training_args():  # ! modified by Ziyao: data configuration isolated.
     doc_numb_steps = "Number of training batch. Each training uses one batch of data."
@@ -2280,11 +2300,13 @@ def training_args():  # ! modified by Ziyao: data configuration isolated.
     arg_training_data = training_data_args()
     arg_validation_data = validation_data_args()
     mixed_precision_data = mixed_precision_args()
+    arg_wandb_config = wandb_config_args()
 
     args = [
         arg_training_data,
         arg_validation_data,
         mixed_precision_data,
+        arg_wandb_config,
         Argument(
             "numb_steps", int, optional=False, doc=doc_numb_steps, alias=["stop_batch"]
         ),
@@ -2424,7 +2446,7 @@ def gen_args(**kwargs) -> List[Argument]:
         loss_args(),
         loss_dict_args(),
         training_args(),
-        nvnmd_args(),
+        nvnmd_args()
     ]
 
 

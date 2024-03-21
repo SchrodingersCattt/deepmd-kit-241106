@@ -827,7 +827,8 @@ def test_property(
         mixed_type=mixed_type,
     )
     property = ret[0]
-    property = property * 222.8902092792289 + -1544.8360893118609
+    #property = property * 222.8902092792289 + -1544.8360893118609
+    property = property * 222.8902092792289
     property = property.reshape([numb_test, dp.numb_task])
 
     if has_atom_property:
