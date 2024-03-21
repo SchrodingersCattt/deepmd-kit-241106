@@ -49,13 +49,15 @@ class PropertyLoss(TaskLoss):
         self.std = kwargs.get("std", 1)
         self.beta = kwargs.get("beta", 1.00)
 
-    def forward(self, model_pred, label, natoms, learning_rate, mae=False):
+    def forward(self, input_dict, model, label, natoms, learning_rate, mae=False):
         """Return loss on properties .
 
         Parameters
         ----------
-        model_pred : dict[str, torch.Tensor]
-            Model predictions.
+        input_dict : dict[str, torch.Tensor]
+            Model inputs.
+        model : torch.nn.Module
+            Model to be used to output the predictions.
         label : dict[str, torch.Tensor]
             Labels.
         natoms : int
@@ -63,11 +65,14 @@ class PropertyLoss(TaskLoss):
 
         Returns
         -------
+        model_pred: dict[str, torch.Tensor]
+            Model predictions.
         loss: torch.Tensor
             Loss for model to minimize.
         more_loss: dict[str, torch.Tensor]
             Other losses for display.
         """
+        model_pred = model(**input_dict)
         assert label["property"].shape[-1] == self.task_dim
         assert model_pred["property"].shape[-1] == self.task_dim
         loss = torch.zeros(1, dtype=env.GLOBAL_PT_FLOAT_PRECISION, device=env.DEVICE)[0]
@@ -140,7 +145,7 @@ class PropertyLoss(TaskLoss):
                 )
             ).detach()
 
-        return loss, more_loss
+        return model_pred, loss, more_loss
 
     @property
     def label_requirement(self) -> List[DataRequirementItem]:
