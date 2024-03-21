@@ -10,6 +10,9 @@ from typing import (
 
 import torch
 
+from deepmd.pt.utils.stat import (
+    compute_output_stats_prop,
+)
 from deepmd.dpmodel import (
     FittingOutputDef,
     OutputVariableDef,
@@ -49,30 +52,38 @@ class PropertyFittingNet(InvarFitting):
         task_dim: int = 1,
         intensive: bool = True,
         neuron: List[int] = [128, 128, 128],
-        bias_atom_e: Optional[torch.Tensor] = None,
+        bias_atom_p: Optional[torch.Tensor] = None,
         resnet_dt: bool = True,
         numb_fparam: int = 0,
         numb_aparam: int = 0,
         activation_function: str = "tanh",
         precision: str = DEFAULT_PRECISION,
         mixed_types: bool = True,
+        rcond: Optional[float] = None,
+        seed: Optional[int] = None,
+        atom_prop: Optional[List[float]] = None,
         **kwargs,
     ):
         self.task_dim = task_dim
         self.intensive = intensive
+        self.bias_atom_p = bias_atom_p
+        self.atom_prop = atom_prop
         super().__init__(
             var_name="property",
             ntypes=ntypes,
             dim_descrpt=dim_descrpt,
             dim_out=task_dim,
             neuron=neuron,
-            bias_atom_e=bias_atom_e,
+            bias_atom_e=bias_atom_p,
             resnet_dt=resnet_dt,
             numb_fparam=numb_fparam,
             numb_aparam=numb_aparam,
             activation_function=activation_function,
             precision=precision,
             mixed_types=mixed_types,
+            rcond=rcond,
+            seed=seed,
+            atom_ener=atom_prop,
             **kwargs,
         )
 
@@ -122,7 +133,10 @@ class PropertyFittingNet(InvarFitting):
             The path to the stat file.
 
         """
-        pass
+        bias_atom_p = compute_output_stats_prop(
+            merged, self.ntypes, stat_file_path, self.rcond, self.atom_prop, self.intensive
+        )
+        self.bias_atom_e.copy_(bias_atom_p.view([self.ntypes, self.dim_out]))
 
     # make jit happy with torch 2.0.0
     exclude_types: List[int]
