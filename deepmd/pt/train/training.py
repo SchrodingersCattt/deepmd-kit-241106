@@ -988,13 +988,15 @@ class Trainer:
             for f in checkpoint_dir.glob("model*.pt")
             if not f.is_symlink() and f.name.startswith(self.save_ckpt)
         ]
+        '''
         if len(checkpoint_files) > self.max_ckpt_keep:
             checkpoint_files.sort(key=lambda x: x.stat().st_mtime)
-            if checkpoint_files[0].name in ['model.ckpt-10.pt','model.ckpt-1000.pt','model.ckpt-10000','model.ckpt-50000', 'model.ckpt-100000',
-                                       'model.ckpt-200000','model.ckpt-500000','model.ckpt-700000']:
+            if checkpoint_files[0].name in ['model.ckpt-10.pt','model.ckpt-1000.pt','model.ckpt-10000.pt','model.ckpt-50000.pt', 'model.ckpt-100000.pt',
+                                       'model.ckpt-200000.pt','model.ckpt-500000.pt','model.ckpt-700000.pt']:
                 os.system(f"mv {checkpoint_files[0].name} record.{checkpoint_files[0].name.split('.')[1]}")
             else:
                 checkpoint_files[0].unlink()
+        '''
 
     def get_data(self, is_train=True, task_key="Default"):
         if not self.multi_task:

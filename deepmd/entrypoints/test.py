@@ -828,7 +828,8 @@ def test_property(
     )
     property = ret[0]
     #property = property * 222.8902092792289 + -1544.8360893118609
-    property = property * 222.8902092792289
+    #property = property * 222.8902092792289
+    property = property * 3.8478201171088138 - 3.8030062305295944
     property = property.reshape([numb_test, dp.numb_task])
 
     if has_atom_property:
@@ -908,7 +909,7 @@ def print_property_sys_avg(avg: Dict[str, float]):
         f.write(f"PROPERTY MAE            : {avg['mae_property']:e} Occupation/eV\n")
         f.write(f"PROPERTY RMSE           : {avg['rmse_property']:e} Occupation/eV\n")
         f.write(f"PROPERTY MAE/Natoms     : {avg['mae_propertya']:e} Occupation/eV\n")
-        f.write(f"PROPERTY RMSE/Natoms    : {avg['rmse_propertya']:e} Occupation/eV")
+        f.write(f"PROPERTY RMSE/Natoms    : {avg['rmse_propertya']:e} Occupation/eV\n")
     log.info(f"PROPERTY MAE            : {avg['mae_property']:e} Occupation/eV")
     log.info(f"PROPERTY RMSE           : {avg['rmse_property']:e} Occupation/eV")
     log.info(f"PROPERTY MAE/Natoms     : {avg['mae_propertya']:e} Occupation/eV")
