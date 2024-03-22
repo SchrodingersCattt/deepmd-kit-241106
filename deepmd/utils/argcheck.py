@@ -1320,6 +1320,7 @@ def model_args(exclude_hybrid=False):
         "model",
         dict,
         [
+            Argument("unimol", bool, optional=True),
             Argument("type_map", List[str], optional=True, doc=doc_type_map),
             Argument(
                 "data_stat_nbatch",
