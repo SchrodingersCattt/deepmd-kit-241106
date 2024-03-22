@@ -172,9 +172,9 @@ def get_standard_model(model_params):
 
 
 def get_model(model_params):
-    import logging
-    log = logging.getLogger(__name__)
-    log.info(model_params)
+    #import logging
+    #log = logging.getLogger(__name__)
+    #log.info(model_params)
     if "spin" in model_params:
         return get_spin_model(model_params)
     elif "use_srtab" in model_params:
