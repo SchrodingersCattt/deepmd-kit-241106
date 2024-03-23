@@ -157,6 +157,9 @@ class NeighborStat(BaseNeighborStat):
                 data_set_data = data_set._load_set(jj)
                 if data_set.multistru:
                     for kk in range(data_set_data["coord"].shape[1]):
+                        import logging
+                        log = logging.getLogger(__name__)
+                        log.info(data_set_data["coord"].shape)
                         minrr2, max_nnei = self.auto_batch_size.execute_all(
                             self._execute,
                             data_set_data["coord"].shape[0],
