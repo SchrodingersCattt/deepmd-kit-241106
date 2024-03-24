@@ -5,9 +5,14 @@ from typing import (
 )
 
 import torch
+import os
 
 from .dp_model import (
     DPModel,
+)
+
+from deepmd.pt.utils.env import (
+    DEVICE
 )
 
 
@@ -42,7 +47,12 @@ class PropertyModel(DPModel):
         model_predict["atom_property"] = model_ret["property"]
         if self.get_fitting_net().intensive:
             natoms = model_predict["atom_property"].shape[1]
-            model_predict["property"] = model_ret["property_redu"] / natoms
+            if isinstance(self.get_fitting_net().intensive, list):
+                intensive_list = self.get_fitting_net().intensive
+                divided_list = [natoms if ii else 1 for ii in intensive_list]
+                model_predict["property"] = model_ret["property_redu"] / torch.tensor(divided_list).to("cuda:0")
+            else:
+                model_predict["property"] = model_ret["property_redu"] / natoms
         else:
             model_predict["property"] = model_ret["property_redu"]
         if "mask" in model_ret:

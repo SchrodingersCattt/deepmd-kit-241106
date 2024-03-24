@@ -827,7 +827,7 @@ def test_property(
         mixed_type=mixed_type,
     )
     property = ret[0]
-
+    
     mean= np.array([
             0.22008500524052105,
             0.24892658759891675,
@@ -842,6 +842,23 @@ def test_property(
             0.02345177178004201,
             0.03730141834205415,
         ]),
+    
+    '''
+    mean = [
+                0,
+                0,
+                0.02289283121913152,
+                0.043164444107224746,
+                0,
+                0,
+                0.020287111373358993,
+                0.03312609817084387,
+                0,
+                0,
+                0.02345177178004201,
+                0.03730141834205415,
+            ]
+    '''
     std= np.array([
             0.043832862248693226,
             0.03452326954549232,
@@ -858,10 +875,10 @@ def test_property(
         ]),
     #property = property * 222.8902092792289 + -1544.8360893118609
     #property = property * 222.8902092792289
-    #property = property * 3.8478201171088138 - 3.8030062305295944
+    property = property * 3.8478201171088138 - 3.8030062305295944
     #property = property * 3.8478201171088138
     #property = property * 2.096441210089345
-    property = property * std + mean
+    #property = property * std + mean
     property = property.reshape([numb_test, dp.numb_task])
 
     if has_atom_property:

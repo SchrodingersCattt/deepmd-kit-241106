@@ -686,6 +686,7 @@ def descrpt_dpa2_args():
     doc_repformer_add_type_ebd_to_seq = (
         "repformers block: concatenate the type embedding at the output"
     )
+    doc_trainable = ("If the parameters in descriptor is trainable")
     return [
         Argument("repinit_rcut", float, doc=doc_repinit_rcut),
         Argument("repinit_rcut_smth", float, doc=doc_repinit_rcut_smth),
@@ -873,6 +874,7 @@ def descrpt_dpa2_args():
             default=False,
             doc=doc_repformer_add_type_ebd_to_seq,
         ),
+        Argument("trainable", bool, optional=True, default=True, doc=doc_trainable),
     ]
 
 
@@ -1210,7 +1212,7 @@ def fitting_property():
         Argument("precision", str, optional=True, default="default", doc=doc_precision),
         Argument("seed", [int, None], optional=True, doc=doc_seed),
         Argument("task_dim", int, optional=True, default=1, doc=doc_task_dim),
-        Argument("intensive", bool, optional=True, default=True, doc=doc_intensive)
+        Argument("intensive", [bool, list], optional=True, default=True, doc=doc_intensive)
     ]
 
 
