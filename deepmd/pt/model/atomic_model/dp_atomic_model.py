@@ -7,6 +7,8 @@ from typing import (
     List,
     Optional,
 )
+import numpy as np
+import glob
 
 import torch
 
@@ -168,6 +170,33 @@ class DPAtomicModel(torch.nn.Module, BaseAtomicModel):
             nlist,
             mapping=mapping,
         )
+        '''
+        print(descriptor.shape)
+        adescriptor = np.mean(descriptor.cpu().numpy(), axis=1)
+        print(adescriptor.shape)
+        records = glob.glob("*_encode.npy")
+        max = 0
+        for record in records:
+            tmp = int(record.split("_")[0])
+            if tmp> max:
+                max = tmp
+        records_2 = glob.glob("*_property.npy")
+        max_2 = 0
+        for record_2 in records_2:
+            tmp = int(record_2.split("_")[0])
+            if tmp> max_2:
+                max_2 = tmp
+        
+        if max == max_2:
+            np.save(str(max+1)+"_encode", adescriptor)
+        else:
+            origin = np.load(str(max)+"_encode.npy")
+            adescriptor = np.concatenate((origin, adescriptor),axis=0)
+            np.save(str(max)+"_encode", adescriptor)
+        print(max)
+        #num = str(descriptor.shape[1])
+        #np.save(num,adescriptor)
+        '''
         assert descriptor is not None
         # energy, force
         fit_ret = self.fitting_net(

@@ -68,6 +68,9 @@ class ModelWrapper(torch.nn.Module):
         """
         supported_types = ["descriptor", "fitting_net"]
         for shared_item in shared_links:
+            #import json
+            #with open("a.json","w") as f:
+            #    json.dump(shared_links, f,indent=4)
             class_name = shared_links[shared_item]["type"]
             shared_base = shared_links[shared_item]["links"][0]
             class_type_base = shared_base["shared_type"]
@@ -104,6 +107,31 @@ class ModelWrapper(torch.nn.Module):
                             .get_descriptor()
                             .descriptor_list[hybrid_index]
                         )
+                    else:
+                        raise RuntimeError(f"Unknown class_type {class_type_link}!")
+                    link_class.share_params(
+                        base_class, shared_level_link, resume=resume
+                    )
+                    log.warning(
+                        f"Shared params of {model_key_base}.{class_type_base} and {model_key_link}.{class_type_link}!"
+                    )
+            if "fitting_net" in class_type_base:
+                if class_type_base == "fitting_net":
+                    base_class = self.model[model_key_base].get_fitting_net()
+                else:
+                    raise RuntimeError(f"Unknown class_type {class_type_base}!")
+                for link_item in shared_links[shared_item]["links"][1:]:
+                    class_type_link = link_item["shared_type"]
+                    model_key_link = link_item["model_key"]
+                    shared_level_link = int(link_item["shared_level"])
+                    assert (
+                        shared_level_link >= shared_level_base
+                    ), "The shared_links must be sorted by shared_level!"
+                    assert (
+                        "fitting_net" in class_type_link
+                    ), f"Class type mismatched: {class_type_base} vs {class_type_link}!"
+                    if class_type_link == "fitting_net":
+                        link_class = self.model[model_key_link].get_fitting_net()
                     else:
                         raise RuntimeError(f"Unknown class_type {class_type_link}!")
                     link_class.share_params(

@@ -2,6 +2,7 @@
 """Test trained DeePMD model."""
 
 import logging
+import glob
 from pathlib import (
     Path,
 )
@@ -826,6 +827,7 @@ def test_property(
         atomic=has_atom_property,
         mixed_type=mixed_type,
     )
+    
     property = ret[0]
     
     mean= np.array([
@@ -881,17 +883,25 @@ def test_property(
     '''
     #property = property * 222.8902092792289 + -1544.8360893118609
     #property = property * 222.8902092792289
-    #property = property * 3.8478201171088138 - 3.8030062305295944
+    property = property * 3.8478201171088138 - 3.8030062305295944
     #property = property * 3.8478201171088138
     #property = property * 2.096441210089345
     #property = property * std + mean
-    property = property * 1.203004
+    #property = property * 1.203004
     property = property.reshape([numb_test, dp.numb_task])
 
     if has_atom_property:
         aproperty = ret[1]
         aproperty = aproperty.reshape([numb_test, natoms * dp.numb_task])
-
+    records = glob.glob("*_property.npy")
+    max = 0
+    for record in records:
+        tmp = int(record.split("_")[0])
+        if tmp> max:
+            max = tmp
+    np.save(str(max+1)+"_property", test_data["property"])
+    print(test_data["property"].shape)
+    print(max)
     diff_property = property - test_data["property"][:numb_test]
     mae_property = mae(diff_property)
     rmse_property = rmse(diff_property)

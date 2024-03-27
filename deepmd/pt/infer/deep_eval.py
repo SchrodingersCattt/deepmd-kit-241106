@@ -122,7 +122,7 @@ class DeepEval(DeepEvalBackend):
                 state_dict = state_dict_head
             self.input_param["resuming"] = True
             model = get_model(self.input_param).to(DEVICE)
-            model = torch.jit.script(model)
+            #model = torch.jit.script(model)
             self.dp = ModelWrapper(model)
             self.dp.load_state_dict(state_dict)
         elif str(self.model_path).endswith(".pth"):

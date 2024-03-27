@@ -326,7 +326,6 @@ class Trainer:
                 loss_params["label_name"] = label_name
                 return TensorLoss(**loss_params)
             elif loss_type == "property":
-                log.info(_model)
                 task_dim = _model.model_output_def()["property"].output_size
                 loss_params["task_dim"] = task_dim
                 return PropertyLoss(**loss_params)
@@ -545,8 +544,6 @@ class Trainer:
                                     _random_state_dict[item_key].clone().detach()
                                 )
                             else:
-                                log.info(_model_key)
-                                log.info(_model_key_from)
                                 new_key = item_key.replace(
                                     f".{_model_key}.", f".{_model_key_from}."
                                 )
@@ -558,7 +555,6 @@ class Trainer:
                     if not self.multi_task:
                         model_key = "Default"
                         model_key_from = self.finetune_links[model_key]
-                        log.info(self.finetune_links)
                         new_fitting = model_params.pop("new_fitting", False)
                         update_single_finetune_params(
                             model_key,
@@ -639,6 +635,7 @@ class Trainer:
 
         # Multi-task share params
         if shared_links is not None:
+            log.info(shared_links)
             self.wrapper.share_params(shared_links, resume=resuming or self.rank != 0)
 
         if dist.is_initialized():

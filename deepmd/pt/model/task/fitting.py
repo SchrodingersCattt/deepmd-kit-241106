@@ -58,21 +58,30 @@ class Fitting(torch.nn.Module, BaseFitting):
         If not start from checkpoint (resume is False),
         some seperated parameters (e.g. mean and stddev) will be re-calculated across different classes.
         """
-        assert (
-            self.__class__ == base_class.__class__
-        ), "Only fitting nets of the same type can share params!"
+        #assert (
+        #    self.__class__ == base_class.__class__
+        #), "Only fitting nets of the same type can share params!"
+        
         if shared_level == 0:
             # link buffers
             if hasattr(self, "bias_atom_e"):
                 self.bias_atom_e = base_class.bias_atom_e
             # the following will successfully link all the params except buffers, which need manually link.
             for item in self._modules:
+                log.info(item)
+                log.info(self._modules[item])
                 self._modules[item] = base_class._modules[item]
         elif shared_level == 1:
             # only not share the bias_atom_e
             # the following will successfully link all the params except buffers, which need manually link.
             for item in self._modules:
                 self._modules[item] = base_class._modules[item]
+        elif shared_level == 2:
+            layer1 = self._modules['filter_layers']._networks._modules['0'].layers[0]
+            for k,v in layer1.state_dict().items():
+                log.info(k)
+                log.info(v.size())
+            log.info(self._modules['filter_layers']._networks._modules['0'].layers)
         else:
             raise NotImplementedError
 

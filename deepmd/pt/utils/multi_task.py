@@ -8,8 +8,11 @@ from deepmd.pt.model.descriptor import (
 )
 from deepmd.pt.model.task import (
     BaseFitting,
+    Fitting,
 )
 
+import logging
+log = logging.getLogger(__name__)
 
 def preprocess_shared_params(model_config):
     """Preprocess the model params for multitask model, and generate the links dict for further sharing.
@@ -97,6 +100,9 @@ def preprocess_shared_params(model_config):
     type_map_keys = []
 
     def replace_one_item(params_dict, key_type, key_in_dict, suffix="", index=None):
+        log.info(params_dict)
+        log.info(key_type)
+        log.info(key_in_dict)
         shared_type = key_type
         shared_key = key_in_dict
         shared_level = 0
@@ -113,9 +119,20 @@ def preprocess_shared_params(model_config):
         if shared_type == "type_map":
             if key_in_dict not in type_map_keys:
                 type_map_keys.append(key_in_dict)
+        elif shared_type == "fitting_net":
+            if "fitting_net" not in shared_links:
+                class_name = Fitting
+                shared_links["fitting_net"] = {"type": class_name, "links": []}
+            link_item = {
+                "model_key": model_key,
+                "shared_type": shared_type + suffix,
+                "shared_level": shared_level,
+            }
+            shared_links["fitting_net"]["links"].append(link_item)
         else:
             if shared_key not in shared_links:
-                class_name = get_class_name(shared_type, shared_dict[key_in_dict])
+                #class_name = get_class_name(shared_type, shared_dict[key_in_dict])
+                class_name = get_class_name(shared_type, shared_dict[shared_key])
                 shared_links[shared_key] = {"type": class_name, "links": []}
             link_item = {
                 "model_key": model_key,
