@@ -505,7 +505,22 @@ def make_embedding_network(T_Network, T_NetworkLayer):
         ):
             layers = []
             i_in = in_dim
-            for idx, ii in enumerate(neuron):
+            for idx, ii in enumerate(neuron[:1]):
+                i_ot = ii
+                layers.append(
+                    T_NetworkLayer(
+                        i_in,
+                        i_ot,
+                        bias=False,
+                        use_timestep=False,
+                        activation_function=None,
+                        resnet=False,
+                        precision=precision,
+                    ).serialize()
+                )
+                i_in = i_ot
+
+            for idx, ii in enumerate(neuron[1:]):
                 i_ot = ii
                 layers.append(
                     T_NetworkLayer(

@@ -77,10 +77,7 @@ class Fitting(torch.nn.Module, BaseFitting):
             for item in self._modules:
                 self._modules[item] = base_class._modules[item]
         elif shared_level == 2:
-            layer1 = self._modules['filter_layers']._networks._modules['0'].layers[0]
-            for k,v in layer1.state_dict().items():
-                log.info(k)
-                log.info(v.size())
+            self._modules['filter_layers']._networks._modules['0'].layers[0] = base_class._modules['filter_layers']._networks._modules['0'].layers[0]
             log.info(self._modules['filter_layers']._networks._modules['0'].layers)
         else:
             raise NotImplementedError
