@@ -170,10 +170,12 @@ def change_finetune_model_params(finetune_model, model_config, model_branch=""):
                 )
                 model_branch_from = pretrained_key
                 finetune_links[model_key] = model_branch_from
-            elif model_key in pretrained_keys:
+            #elif model_key in pretrained_keys:
+            #    log.info(pretrained_keys)
+            #    log.info(model_key)
                 # not do anything if not defined "finetune_head" in heads that exist in the pretrained model
                 # this will just do resuming
-                model_branch_from = model_key
+            #    model_branch_from = model_key
             else:
                 # if not defined "finetune_head" in new heads, the fitting net will bre randomly initialized
                 model_branch_from = ""

@@ -635,7 +635,6 @@ class Trainer:
 
         # Multi-task share params
         if shared_links is not None:
-            log.info(shared_links)
             self.wrapper.share_params(shared_links, resume=resuming or self.rank != 0)
 
         if dist.is_initialized():

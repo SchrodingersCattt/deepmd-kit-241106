@@ -68,8 +68,6 @@ class Fitting(torch.nn.Module, BaseFitting):
                 self.bias_atom_e = base_class.bias_atom_e
             # the following will successfully link all the params except buffers, which need manually link.
             for item in self._modules:
-                log.info(item)
-                log.info(self._modules[item])
                 self._modules[item] = base_class._modules[item]
         elif shared_level == 1:
             # only not share the bias_atom_e
@@ -78,7 +76,7 @@ class Fitting(torch.nn.Module, BaseFitting):
                 self._modules[item] = base_class._modules[item]
         elif shared_level == 2:
             self._modules['filter_layers']._networks._modules['0'].layers[0] = base_class._modules['filter_layers']._networks._modules['0'].layers[0]
-            log.info(self._modules['filter_layers']._networks._modules['0'].layers)
+            #self._modules['filter_layers'].networks._modules['0'].layers[0] = base_class._modules['filter_layers'].networks._modules['0'].layers[0]
         else:
             raise NotImplementedError
 

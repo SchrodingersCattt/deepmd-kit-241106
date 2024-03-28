@@ -100,9 +100,6 @@ def preprocess_shared_params(model_config):
     type_map_keys = []
 
     def replace_one_item(params_dict, key_type, key_in_dict, suffix="", index=None):
-        log.info(params_dict)
-        log.info(key_type)
-        log.info(key_in_dict)
         shared_type = key_type
         shared_key = key_in_dict
         shared_level = 0

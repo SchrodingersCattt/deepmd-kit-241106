@@ -68,9 +68,6 @@ class ModelWrapper(torch.nn.Module):
         """
         supported_types = ["descriptor", "fitting_net"]
         for shared_item in shared_links:
-            #import json
-            #with open("a.json","w") as f:
-            #    json.dump(shared_links, f,indent=4)
             class_name = shared_links[shared_item]["type"]
             shared_base = shared_links[shared_item]["links"][0]
             class_type_base = shared_base["shared_type"]
