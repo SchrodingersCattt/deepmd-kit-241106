@@ -886,8 +886,8 @@ def test_property(
     #property = property * 3.8478201171088138 - 3.8030062305295944
     #property = property * 3.8478201171088138
     #property = property * 2.096441210089345
-    property = property * std + mean
-    #property = property * 1.203004
+    #property = property * std + mean
+    property = property * 1.203004
     property = property.reshape([numb_test, dp.numb_task])
 
     if has_atom_property:
