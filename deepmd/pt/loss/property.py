@@ -16,7 +16,7 @@ from deepmd.pt.utils import (
 from deepmd.utils.data import (
     DataRequirementItem,
 )
-
+from IPython import embed
 log = logging.getLogger(__name__)
 
 
@@ -73,7 +73,10 @@ class PropertyLoss(TaskLoss):
             Other losses for display.
         """
         model_pred = model(**input_dict)
-        assert label["property"].shape[-1] == self.task_dim
+        if self.loss_func != "finetune_cross_entropy":
+            assert label["property"].shape[-1] == self.task_dim
+        else:
+            assert label["property"].shape[-1] == 1
         assert model_pred["property"].shape[-1] == self.task_dim
         loss = torch.zeros(1, dtype=env.GLOBAL_PT_FLOAT_PRECISION, device=env.DEVICE)[0]
         more_loss = {}
@@ -113,8 +116,27 @@ class PropertyLoss(TaskLoss):
                     reduction="mean",
                 )
             )
+        elif self.loss_func == "finetune_cross_entropy":
+            lprobs = F.log_softmax(model_pred["property"].float(), dim=-1)
+            lprobs = lprobs.view(-1, lprobs.size(-1))
+            targets = torch.tensor(label["property"].view(-1),dtype=torch.int64)
+            loss += F.nll_loss(
+                lprobs,
+                targets,
+                reduction="sum"
+            )
+        elif self.loss_func == "multi_task_BCE":
+            logit_output = model_pred["property"]
+            is_valid = label["property"] > -0.5
+            pred = logit_output[is_valid].float()
+            targets = label["property"][is_valid].float()
+            loss += F.binary_cross_entropy_with_logits(
+                pred,
+                targets,
+                reduction="sum"
+            )
         else:
-            raise RuntimeError(f"Unknown loss function : {self.func}")
+            raise RuntimeError(f"Unknown loss function : {self.loss_func}")
 
         # more loss
         if "smooth_mae" in self.metric:
@@ -144,6 +166,19 @@ class PropertyLoss(TaskLoss):
                     reduction="mean",
                 )
             ).detach()
+        if "loss" in self.metric:
+            if self.loss_func == "finetune_cross_entropy":
+                more_loss["loss"] = F.nll_loss(
+                    lprobs,
+                    targets,
+                    reduction="mean"
+                ).detach()
+            elif self.loss_func == "multi_task_BCE":
+                more_loss["loss"] = F.binary_cross_entropy_with_logits(
+                    pred,
+                    targets,
+                    reduction="mean"
+                ).detach()
 
         return model_pred, loss, more_loss
 

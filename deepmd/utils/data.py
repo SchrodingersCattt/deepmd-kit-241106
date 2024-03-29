@@ -18,7 +18,7 @@ from deepmd.utils import random as dp_random
 from deepmd.utils.path import (
     DPPath,
 )
-
+from IPython import embed
 log = logging.getLogger(__name__)
 
 
@@ -674,8 +674,12 @@ class DeepmdData:
                         data = data.reshape([nframes, natoms, -1])
                         data = data[:, idx_map, :]
                         data = data.reshape([nframes, -1])
-                    data = np.reshape(data, [nframes, ndof])
+                    try:
+                        data = np.reshape(data, [nframes, ndof])
+                    except:
+                        data = np.reshape(data, [nframes, 1])
             except ValueError as err_message:
+                embed()
                 explanation = "This error may occur when your label mismatch it's name, i.e. you might store global tensor in `atomic_tensor.npy` or atomic tensor in `tensor.npy`."
                 log.error(str(err_message))
                 log.error(explanation)
