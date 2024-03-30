@@ -862,7 +862,7 @@ def test_property(
                 0.03730141834205415,
             ]
     '''
-    
+    '''
     std= np.array([
             0.043832862248693226,
             0.03452326954549232,
@@ -880,13 +880,13 @@ def test_property(
     '''
     mean = [-0.23997669940621352, 0.011123767412331285, 0.2511003712141015]
     std = [0.02213143402267657, 0.046936069870866196, 0.04751888787058615]
-    '''
+    
     #property = property * 222.8902092792289 + -1544.8360893118609
     #property = property * 222.8902092792289
-    property = property * 3.8478201171088138 - 3.8030062305295944
+    #property = property * 3.8478201171088138 - 3.8030062305295944
     #property = property * 3.8478201171088138
     #property = property * 2.096441210089345
-    #property = property * std + mean
+    property = property * std + mean
     #property = property * 1.203004
     property = property.reshape([numb_test, dp.numb_task])
 
