@@ -185,13 +185,8 @@ def get_model(model_params):
         return get_spin_model(model_params)
     elif "use_srtab" in model_params:
         return get_zbl_model(model_params)
-<<<<<<< HEAD
     elif "unimol" in model_params:
         return UniMolModel(model_params)
-=======
-    #elif "unimol" in model_params:
-    #    return 
->>>>>>> 7c82631526f04f7945a11c34a2db824a3b7afb88
     else:
         return get_standard_model(model_params)
 

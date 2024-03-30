@@ -8,11 +8,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-<<<<<<< HEAD
 from .modules import TransformerEncoderLayer, LayerNorm
-=======
-from unicore.modules import TransformerEncoderLayer, LayerNorm
->>>>>>> 7c82631526f04f7945a11c34a2db824a3b7afb88
 
 
 class TransformerEncoderWithPair(nn.Module):
