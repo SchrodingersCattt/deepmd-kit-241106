@@ -5,6 +5,7 @@ from abc import (
     abstractmethod,
 )
 from typing import (
+    Dict,
     List,
     Optional,
     Union,
@@ -156,6 +157,7 @@ class GeneralFitting(Fitting):
         self.precision = precision
         self.prec = PRECISION_DICT[self.precision]
         self.rcond = rcond
+        self.seed = seed
         # order matters, should be place after the assignment of ntypes
         self.reinit_exclude(exclude_types)
         self.trainable = trainable
@@ -229,14 +231,12 @@ class GeneralFitting(Fitting):
                         self.resnet_dt,
                         self.precision,
                         bias_out=True,
+                        seed=seed,
                     )
                     for ii in range(self.ntypes if not self.mixed_types else 1)
                 ],
             )
             self.filter_layers_old = None
-
-        if seed is not None:
-            torch.manual_seed(seed)
         # set trainable
         for param in self.parameters():
             param.requires_grad = self.trainable
@@ -366,6 +366,36 @@ class GeneralFitting(Fitting):
 
     def _extend_a_avg_std(self, xx: torch.Tensor, nb: int, nloc: int) -> torch.Tensor:
         return torch.tile(xx.view([1, 1, self.numb_aparam]), [nb, nloc, 1])
+
+    def update_type_params(
+        self,
+        state_dict: Dict[str, torch.Tensor],
+        mapping_index: List[int],
+        prefix: str = "",
+    ) -> Dict[str, torch.Tensor]:
+        """
+        Update the type related params when loading from pretrained model with redundant types.
+
+        Parameters
+        ----------
+        state_dict : Dict[str, torch.Tensor]
+            The model state dict from the pretrained model.
+        mapping_index : List[int]
+            The mapping index of newly defined types to those in the pretrained model.
+        prefix : str
+            The prefix of the param keys.
+
+        Returns
+        -------
+        updated_dict: Dict[str, torch.Tensor]
+            Updated type related params.
+        """
+        assert self.mixed_types, "Only fitting net in mixed_types can be slimmed!"
+        updated_dict = {}
+        for key in state_dict.keys():
+            if f"{prefix}.bias_atom_e" in key:
+                updated_dict[key] = state_dict[key][mapping_index].clone().detach()
+        return updated_dict
 
     def _forward_common(
         self,

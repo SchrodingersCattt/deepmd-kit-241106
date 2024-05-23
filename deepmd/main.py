@@ -256,6 +256,11 @@ def main_parser() -> argparse.ArgumentParser:
         help="Finetune the frozen pretrained model.",
     )
     parser_train.add_argument(
+        "--use-pretrain-script",
+        action="store_true",
+        help="(Supported Backend: PyTorch) Use model params in the script of the pretrained model instead of user input.",
+    )
+    parser_train.add_argument(
         "-o",
         "--output",
         type=str,
@@ -383,7 +388,7 @@ def main_parser() -> argparse.ArgumentParser:
         "--rand-seed",
         type=int,
         default=None,
-        help="(Supported backend: TensorFlow) The random seed",
+        help="The random seed",
     )
     parser_tst.add_argument(
         "--shuffle-test", action="store_true", default=False, help="Shuffle test data"
@@ -400,13 +405,7 @@ def main_parser() -> argparse.ArgumentParser:
         "--atomic",
         action="store_true",
         default=False,
-        help="(Supported backend: TensorFlow) Test the accuracy of atomic label, i.e. energy / tensor (dipole, polar)",
-    )
-    parser_tst.add_argument(
-        "-i",
-        "--input_script",
-        type=str,
-        help="(Supported backend: PyTorch) The input script of the model",
+        help="Test the accuracy of atomic label, i.e. energy / tensor (dipole, polar)",
     )
     parser_tst.add_argument(
         "--head",

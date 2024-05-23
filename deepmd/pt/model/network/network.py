@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 from typing import (
+    Dict,
     List,
     Optional,
 )
@@ -567,6 +568,7 @@ class TypeEmbedNet(nn.Module):
         bavg=0.0,
         stddev=1.0,
         precision="default",
+        seed: Optional[int] = None,
         use_econf_tebd=False,
         type_map=None,
     ):
@@ -586,6 +588,7 @@ class TypeEmbedNet(nn.Module):
             use_econf_tebd=use_econf_tebd,
             type_map=type_map,
             precision=precision,
+            seed=seed,
         )
         # nn.init.normal_(self.embedding.weight[:-1], mean=bavg, std=stddev)
 
@@ -616,6 +619,33 @@ class TypeEmbedNet(nn.Module):
                 self._modules[item] = base_class._modules[item]
         else:
             raise NotImplementedError
+
+    def update_type_params(
+        self,
+        state_dict: Dict[str, torch.Tensor],
+        mapping_index: List[int],
+        prefix: str = "",
+    ) -> Dict[str, torch.Tensor]:
+        """
+        Update the type related params when loading from pretrained model with redundant types.
+
+        Parameters
+        ----------
+        state_dict : Dict[str, torch.Tensor]
+            The model state dict from the pretrained model.
+        mapping_index : List[int]
+            The mapping index of newly defined types to those in the pretrained model.
+        prefix : str
+            The prefix of the param keys.
+
+        Returns
+        -------
+        updated_dict: Dict[str, torch.Tensor]
+            Updated type related params.
+        """
+        return self.embedding.update_type_params(
+            state_dict, mapping_index=mapping_index, prefix=prefix + ".embedding"
+        )
 
 
 class TypeEmbedNetConsistent(nn.Module):
@@ -699,13 +729,13 @@ class TypeEmbedNetConsistent(nn.Module):
                 )
             )
             embed_input_dim = ECONF_DIM
-        # no way to pass seed?
         self.embedding_net = EmbeddingNet(
             embed_input_dim,
             self.neuron,
             self.activation_function,
             self.resnet_dt,
             self.precision,
+            self.seed,
         )
         for param in self.parameters():
             param.requires_grad = trainable
@@ -730,6 +760,36 @@ class TypeEmbedNetConsistent(nn.Module):
                 [embed, torch.zeros(1, embed.shape[1], dtype=self.prec, device=device)]
             )
         return embed
+
+    def update_type_params(
+        self,
+        state_dict: Dict[str, torch.Tensor],
+        mapping_index: List[int],
+        prefix: str = "",
+    ) -> Dict[str, torch.Tensor]:
+        """
+        Update the type related params when loading from pretrained model with redundant types.
+
+        Parameters
+        ----------
+        state_dict : Dict[str, torch.Tensor]
+            The model state dict from the pretrained model.
+        mapping_index : List[int]
+            The mapping index of newly defined types to those in the pretrained model.
+        prefix : str
+            The prefix of the param keys.
+
+        Returns
+        -------
+        updated_dict: Dict[str, torch.Tensor]
+            Updated type related params.
+        """
+        assert len(self.neuron) == 1, "Only one layer type embedding can be slimmed!"
+        updated_dict = {}
+        for key in state_dict.keys():
+            if f"{prefix}.embedding_net.layers.0.matrix" in key:
+                updated_dict[key] = state_dict[key][mapping_index].clone().detach()
+        return updated_dict
 
     @classmethod
     def deserialize(cls, data: dict):

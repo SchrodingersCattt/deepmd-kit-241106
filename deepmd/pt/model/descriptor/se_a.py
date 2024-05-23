@@ -82,6 +82,7 @@ class DescrptSeA(BaseDescriptor, torch.nn.Module):
         env_protection: float = 0.0,
         old_impl: bool = False,
         type_one_side: bool = True,
+        seed: Optional[int] = None,
         **kwargs,
     ):
         super().__init__()
@@ -99,6 +100,7 @@ class DescrptSeA(BaseDescriptor, torch.nn.Module):
             env_protection=env_protection,
             old_impl=old_impl,
             type_one_side=type_one_side,
+            seed=seed,
             **kwargs,
         )
 
@@ -162,6 +164,33 @@ class DescrptSeA(BaseDescriptor, torch.nn.Module):
     def dim_out(self):
         """Returns the output dimension of this descriptor."""
         return self.sea.dim_out
+
+    def update_type_params(
+        self,
+        state_dict: Dict[str, torch.Tensor],
+        mapping_index: List[int],
+        prefix: str = "",
+    ) -> Dict[str, torch.Tensor]:
+        """
+        Update the type related params when loading from pretrained model with redundant types.
+
+        Parameters
+        ----------
+        state_dict : Dict[str, torch.Tensor]
+            The model state dict from the pretrained model.
+        mapping_index : List[int]
+            The mapping index of newly defined types to those in the pretrained model.
+        prefix : str
+            The prefix of the param keys.
+
+        Returns
+        -------
+        updated_dict: Dict[str, torch.Tensor]
+            Updated type related params.
+        """
+        raise NotImplementedError(
+            "Descriptor se_e2_a does not support slimming for type related params!"
+        )
 
     def compute_input_stats(
         self,
@@ -328,6 +357,7 @@ class DescrptBlockSeA(DescriptorBlock):
         old_impl: bool = False,
         type_one_side: bool = True,
         trainable: bool = True,
+        seed: Optional[int] = None,
         **kwargs,
     ):
         """Construct an embedding net of type `se_a`.
@@ -354,6 +384,7 @@ class DescrptBlockSeA(DescriptorBlock):
         self.env_protection = env_protection
         self.ntypes = len(sel)
         self.type_one_side = type_one_side
+        self.seed = seed
         # order matters, placed after the assignment of self.ntypes
         self.reinit_exclude(exclude_types)
 
@@ -397,6 +428,7 @@ class DescrptBlockSeA(DescriptorBlock):
                     activation_function=self.activation_function,
                     precision=self.precision,
                     resnet_dt=self.resnet_dt,
+                    seed=self.seed,
                 )
             self.filter_layers = filter_layers
         self.stats = None

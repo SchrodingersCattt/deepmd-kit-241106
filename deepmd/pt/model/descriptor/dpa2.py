@@ -103,7 +103,7 @@ class DescrptDPA2(BaseDescriptor, torch.nn.Module):
         trainable : bool, optional
             If the parameters are trainable.
         seed : int, optional
-            (Unused yet) Random seed for parameter initialization.
+            Random seed for parameter initialization.
         add_tebd_to_repinit_out : bool, optional
             Whether to add type embedding to the output representation from repinit before inputting it into repformer.
         use_econf_tebd : bool, Optional
@@ -160,6 +160,7 @@ class DescrptDPA2(BaseDescriptor, torch.nn.Module):
             resnet_dt=self.repinit_args.resnet_dt,
             smooth=smooth,
             type_one_side=self.repinit_args.type_one_side,
+            seed=seed,
         )
         self.repformers = DescrptBlockRepformers(
             self.repformer_args.rcut,
@@ -194,6 +195,7 @@ class DescrptDPA2(BaseDescriptor, torch.nn.Module):
             precision=precision,
             trainable_ln=self.repformer_args.trainable_ln,
             ln_eps=self.repformer_args.ln_eps,
+            seed=seed,
             old_impl=old_impl,
         )
         self.use_econf_tebd = use_econf_tebd
@@ -202,6 +204,7 @@ class DescrptDPA2(BaseDescriptor, torch.nn.Module):
             ntypes,
             self.repinit_args.tebd_dim,
             precision=precision,
+            seed=seed,
             use_econf_tebd=self.use_econf_tebd,
             type_map=type_map,
         )
@@ -222,6 +225,7 @@ class DescrptDPA2(BaseDescriptor, torch.nn.Module):
                 bias=False,
                 precision=precision,
                 init="glorot",
+                seed=seed,
             )
         self.tebd_transform = None
         if self.add_tebd_to_repinit_out:
@@ -230,6 +234,7 @@ class DescrptDPA2(BaseDescriptor, torch.nn.Module):
                 self.repformers.dim_in,
                 bias=False,
                 precision=precision,
+                seed=seed,
             )
         assert self.repinit.rcut > self.repformers.rcut
         assert self.repinit.sel[0] > self.repformers.sel[0]
@@ -330,6 +335,47 @@ class DescrptDPA2(BaseDescriptor, torch.nn.Module):
         # Other shared levels
         else:
             raise NotImplementedError
+
+    def update_type_params(
+        self,
+        state_dict: Dict[str, torch.Tensor],
+        mapping_index: List[int],
+        prefix: str = "",
+    ) -> Dict[str, torch.Tensor]:
+        """
+        Update the type related params when loading from pretrained model with redundant types.
+
+        Parameters
+        ----------
+        state_dict : Dict[str, torch.Tensor]
+            The model state dict from the pretrained model.
+        mapping_index : List[int]
+            The mapping index of newly defined types to those in the pretrained model.
+        prefix : str
+            The prefix of the param keys.
+
+        Returns
+        -------
+        updated_dict: Dict[str, torch.Tensor]
+            Updated type related params.
+        """
+        updated_dict = {}
+        for key in state_dict.keys():
+            if (
+                f"{prefix}.repinit.mean" in key
+                or f"{prefix}.repinit.stddev" in key
+                or f"{prefix}.repformers.mean" in key
+                or f"{prefix}.repformers.stddev" in key
+            ):
+                updated_dict[key] = state_dict[key][mapping_index].clone().detach()
+        updated_dict.update(
+            self.type_embedding.update_type_params(
+                state_dict,
+                mapping_index=mapping_index,
+                prefix=prefix + ".type_embedding",
+            )
+        )
+        return updated_dict
 
     @property
     def dim_out(self):

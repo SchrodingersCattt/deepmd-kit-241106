@@ -67,6 +67,7 @@ class DescrptSeR(BaseDescriptor, torch.nn.Module):
         env_protection: float = 0.0,
         old_impl: bool = False,
         trainable: bool = True,
+        seed: Optional[int] = None,
         **kwargs,
     ):
         super().__init__()
@@ -82,6 +83,7 @@ class DescrptSeR(BaseDescriptor, torch.nn.Module):
         self.old_impl = False  # this does not support old implementation.
         self.exclude_types = exclude_types
         self.ntypes = len(sel)
+        self.seed = seed
         # order matters, placed after the assignment of self.ntypes
         self.reinit_exclude(exclude_types)
         self.env_protection = env_protection
@@ -113,6 +115,7 @@ class DescrptSeR(BaseDescriptor, torch.nn.Module):
                 activation_function=self.activation_function,
                 precision=self.precision,
                 resnet_dt=self.resnet_dt,
+                seed=self.seed,
             )
         self.filter_layers = filter_layers
         self.stats = None
@@ -200,6 +203,33 @@ class DescrptSeR(BaseDescriptor, torch.nn.Module):
         # Other shared levels
         else:
             raise NotImplementedError
+
+    def update_type_params(
+        self,
+        state_dict: Dict[str, torch.Tensor],
+        mapping_index: List[int],
+        prefix: str = "",
+    ) -> Dict[str, torch.Tensor]:
+        """
+        Update the type related params when loading from pretrained model with redundant types.
+
+        Parameters
+        ----------
+        state_dict : Dict[str, torch.Tensor]
+            The model state dict from the pretrained model.
+        mapping_index : List[int]
+            The mapping index of newly defined types to those in the pretrained model.
+        prefix : str
+            The prefix of the param keys.
+
+        Returns
+        -------
+        updated_dict: Dict[str, torch.Tensor]
+            Updated type related params.
+        """
+        raise NotImplementedError(
+            "Descriptor se_e2_r does not support slimming for type related params!"
+        )
 
     def compute_input_stats(
         self,

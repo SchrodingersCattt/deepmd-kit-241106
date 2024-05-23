@@ -2,6 +2,7 @@
 import copy
 import logging
 from typing import (
+    Dict,
     List,
     Optional,
     Tuple,
@@ -55,6 +56,7 @@ class EnergyFittingNet(InvarFitting):
         activation_function: str = "tanh",
         precision: str = DEFAULT_PRECISION,
         mixed_types: bool = True,
+        seed: Optional[int] = None,
         **kwargs,
     ):
         super().__init__(
@@ -70,6 +72,7 @@ class EnergyFittingNet(InvarFitting):
             activation_function=activation_function,
             precision=precision,
             mixed_types=mixed_types,
+            seed=seed,
             **kwargs,
         )
 
@@ -153,9 +156,6 @@ class EnergyFittingNetDirect(Fitting):
                 filter_layers.append(one)
         self.filter_layers = torch.nn.ModuleList(filter_layers)
 
-        if "seed" in kwargs:
-            torch.manual_seed(kwargs["seed"])
-
     def output_def(self):
         return FittingOutputDef(
             [
@@ -180,6 +180,31 @@ class EnergyFittingNetDirect(Fitting):
         raise NotImplementedError
 
     def deserialize(cls) -> "EnergyFittingNetDirect":
+        raise NotImplementedError
+
+    def update_type_params(
+        self,
+        state_dict: Dict[str, torch.Tensor],
+        mapping_index: List[int],
+        prefix: str = "",
+    ) -> Dict[str, torch.Tensor]:
+        """
+        Update the type related params when loading from pretrained model with redundant types.
+
+        Parameters
+        ----------
+        state_dict : Dict[str, torch.Tensor]
+            The model state dict from the pretrained model.
+        mapping_index : List[int]
+            The mapping index of newly defined types to those in the pretrained model.
+        prefix : str
+            The prefix of the param keys.
+
+        Returns
+        -------
+        updated_dict: Dict[str, torch.Tensor]
+            Updated type related params.
+        """
         raise NotImplementedError
 
     def forward(
