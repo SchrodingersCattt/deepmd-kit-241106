@@ -57,6 +57,7 @@ def get_finetune_rule_single(
         random_fitting=new_fitting,
     )
     if change_model_params:
+        # 虽然继承pretrain model的config，但是trainable要根据input.json来改
         trainable_param = {
             "descriptor": single_config.get("descriptor", {}).get("trainable", True),
             "fitting_net": single_config.get("fitting_net", {}).get("trainable", True),
