@@ -621,8 +621,7 @@ def descrpt_se_atten_args():
             "use_tebd_bias",
             bool,
             optional=True,
-            default=False,
-            doc=doc_use_tebd_bias,
+            default=True,
         ),
         Argument(
             "tebd_input_mode",
@@ -661,7 +660,7 @@ def descrpt_se_atten_args():
     ]
 
 
-@descrpt_args_plugin.register("se_e3_tebd", doc=doc_only_pt_supported)
+@descrpt_args_plugin.register("se_e3_tebd")
 def descrpt_se_e3_tebd_args():
     doc_sel = 'This parameter set the number of selected neighbors. Note that this parameter is a little different from that in other descriptors. Instead of separating each type of atoms, only the summation matters. And this number is highly related with the efficiency, thus one should not make it too large. Usually 200 or less is enough, far away from the GPU limitation 4096. It can be:\n\n\
     - `int`. The maximum number of neighbor atoms to be considered. We recommend it to be less than 200. \n\n\
@@ -677,21 +676,21 @@ def descrpt_se_e3_tebd_args():
     doc_seed = "Random seed for parameter initialization"
     doc_exclude_types = "The excluded pairs of types which have no interaction with each other. For example, `[[0, 1]]` means no interaction between type 0 and type 1."
     doc_env_protection = "Protection parameter to prevent division by zero errors during environment matrix calculations. For example, when using paddings, there may be zero distances of neighbors, which may make division by zero error during environment matrix calculations without protection."
-    doc_smooth = "Whether to use smooth process in calculation when using stripped type embedding. Whether to dot smooth factor (both neighbors j and k) on the network output (out_jk) of type embedding to keep the network smooth, instead of setting `set_davg_zero` to be True."
-    doc_set_davg_zero = "Set the normalization average to zero. This option should be set when `atom_ener` in the energy fitting is used"
+    doc_smooth_type_embedding = f"Whether to use smooth process in attention weights calculation. {doc_only_tf_supported} When using stripped type embedding, whether to dot smooth factor on the network output of type embedding to keep the network smooth, instead of setting `set_davg_zero` to be True."
+    doc_set_davg_zero = "Set the normalization average to zero. This option should be set when `se_atten` descriptor or `atom_ener` in the energy fitting is used"
     doc_tebd_dim = "The dimension of atom type embedding."
-    doc_use_econf_tebd = r"Whether to use electronic configuration type embedding."
+    doc_use_econf_tebd = r"Whether to use electronic configuration type embedding. For TensorFlow backend, please set `use_econf_tebd` in `type_embedding` block instead."
     doc_concat_output_tebd = (
         "Whether to concat type embedding at the output of the descriptor."
     )
     doc_tebd_input_mode = (
         "The input mode of the type embedding. Supported modes are ['concat', 'strip']."
-        "- 'concat': Concatenate the type embedding with the smoothed angular information as the union input for the embedding network. "
-        "The input is `input_jk = concat([angle_jk, tebd_j, tebd_k])`. "
-        "The output is `out_jk = embeding(input_jk)` for the three-body representation of atom i with neighbors j and k."
-        "- 'strip': Use a separated embedding network for the type embedding and combine the output with the angular embedding network output. "
-        "The input is `input_t = concat([tebd_j, tebd_k])`."
-        "The output is `out_jk = embeding_t(input_t) * embeding_s(angle_jk) + embeding_s(angle_jk)` for the three-body representation of atom i with neighbors j and k."
+        "- 'concat': Concatenate the type embedding with the smoothed radial information as the union input for the embedding network. "
+        "When `type_one_side` is False, the input is `input_ij = concat([r_ij, tebd_j, tebd_i])`. When `type_one_side` is True, the input is `input_ij = concat([r_ij, tebd_j])`. "
+        "The output is `out_ij = embeding(input_ij)` for the pair-wise representation of atom i with neighbor j."
+        "- 'strip': Use a separated embedding network for the type embedding and combine the output with the radial embedding network output. "
+        f"When `type_one_side` is False, the input is `input_t = concat([tebd_j, tebd_i])`. {doc_only_pt_supported} When `type_one_side` is True, the input is `input_t = tebd_j`. "
+        "The output is `out_ij = embeding_t(input_t) * embeding_s(r_ij) + embeding_s(r_ij)` for the pair-wise representation of atom i with neighbor j."
     )
 
     return [
@@ -740,7 +739,7 @@ def descrpt_se_e3_tebd_args():
             bool,
             optional=True,
             default=True,
-            doc=doc_smooth,
+            doc=doc_smooth_type_embedding,
         ),
         Argument(
             "exclude_types",
@@ -930,8 +929,7 @@ def descrpt_dpa2_args():
             "use_tebd_bias",
             bool,
             optional=True,
-            default=False,
-            doc=doc_use_tebd_bias,
+            default=True,
         ),
     ]
 
@@ -1027,6 +1025,24 @@ def dpa2_repinit_args():
             default=False,
             doc=doc_resnet_dt,
         ),
+        Argument(
+            "use_three_body",
+            bool,
+            optional=True,
+            default=False,
+        ),
+        Argument(
+            "three_body_neuron",
+            list,
+            optional=True,
+            default=[2, 4, 8],
+            doc=doc_neuron,
+        ),
+        Argument("three_body_rcut", float, optional=True, default=4.0, doc=doc_rcut),
+        Argument(
+            "three_body_rcut_smth", float, optional=True, default=0.5, doc=doc_rcut_smth
+        ),
+        Argument("three_body_sel", int, optional=True, default=40, doc=doc_nsel),
     ]
 
 
@@ -1168,6 +1184,18 @@ def dpa2_repformer_args():
             doc=doc_update_g2_has_attn,
         ),
         Argument(
+            "g1_out_conv",
+            bool,
+            optional=True,
+            default=False,
+        ),
+        Argument(
+            "g1_out_mlp",
+            bool,
+            optional=True,
+            default=False,
+        ),
+        Argument(
             "update_h2",
             bool,
             optional=True,
@@ -1257,6 +1285,12 @@ def dpa2_repformer_args():
             optional=True,
             default=None,
             doc=doc_ln_eps,
+        ),
+        Argument(
+            "use_sqrt_nnei",
+            bool,
+            optional=True,
+            default=False,
         ),
     ]
 
@@ -1959,6 +1993,34 @@ def learning_rate_exp():
             default=None,
             doc=doc_only_pt_supported + doc_decay_rate,
         ),
+        Argument(
+            "factor",
+            float,
+            optional=True,
+            default=0.5,
+            doc="factor to minimize lr once.",
+        ),
+        Argument(
+            "patience",
+            int,
+            optional=True,
+            default=100000,
+            doc="steps to wait before minimize.",
+        ),
+        Argument(
+            "threshold",
+            float,
+            optional=True,
+            default=1e-4,
+            doc="Threshold for measuring the new optimum, to only focus on significant changes. Default: 1e-4.",
+        ),
+        Argument(
+            "threshold_mode",
+            str,
+            optional=True,
+            default="rel",
+            doc="One of rel, abs.",
+        ),
     ]
     return args
 
@@ -1968,7 +2030,10 @@ def learning_rate_variant_type_args():
 
     return Variant(
         "type",
-        [Argument("exp", dict, learning_rate_exp())],
+        [
+            Argument("exp", dict, learning_rate_exp()),
+            Argument("reduce_on_plateau", dict, learning_rate_exp()),
+        ],
         optional=True,
         default_tag="exp",
         doc=doc_lr,
@@ -2131,6 +2196,24 @@ def loss_ener():
             optional=True,
             default=0,
             doc=doc_numb_generalized_coord,
+        ),
+        Argument(
+            "use_huber",
+            bool,
+            optional=True,
+            default=False,
+        ),
+        Argument(
+            "huber_delta",
+            float,
+            optional=True,
+            default=0.01,
+        ),
+        Argument(
+            "torch_huber",
+            bool,
+            optional=True,
+            default=False,
         ),
     ]
 

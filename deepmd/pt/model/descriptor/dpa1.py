@@ -245,6 +245,7 @@ class DescrptDPA1(BaseDescriptor, torch.nn.Module):
         use_econf_tebd: bool = False,
         use_tebd_bias: bool = False,
         type_map: Optional[List[str]] = None,
+        use_tebd_bias=True,
         # not implemented
         spin=None,
         type: Optional[str] = None,
@@ -306,6 +307,7 @@ class DescrptDPA1(BaseDescriptor, torch.nn.Module):
             use_econf_tebd=use_econf_tebd,
             use_tebd_bias=use_tebd_bias,
             type_map=type_map,
+            bias=use_tebd_bias,
         )
         self.tebd_dim = tebd_dim
         self.concat_output_tebd = concat_output_tebd

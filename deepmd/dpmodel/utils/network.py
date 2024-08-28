@@ -583,7 +583,7 @@ def make_embedding_network(T_Network, T_NetworkLayer):
             resnet_dt: bool = False,
             precision: str = DEFAULT_PRECISION,
             seed: Optional[Union[int, List[int]]] = None,
-            bias: bool = True,
+            bias=True,
         ):
             layers = []
             i_in = in_dim

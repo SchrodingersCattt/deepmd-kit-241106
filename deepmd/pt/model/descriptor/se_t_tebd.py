@@ -71,58 +71,6 @@ from .descriptor import (
 
 @BaseDescriptor.register("se_e3_tebd")
 class DescrptSeTTebd(BaseDescriptor, torch.nn.Module):
-    r"""Construct an embedding net that takes angles between two neighboring atoms and type embeddings as input.
-
-    Parameters
-    ----------
-    rcut
-            The cut-off radius
-    rcut_smth
-            From where the environment matrix should be smoothed
-    sel : Union[List[int], int]
-            list[int]: sel[i] specifies the maxmum number of type i atoms in the cut-off radius
-            int: the total maxmum number of atoms in the cut-off radius
-    ntypes : int
-            Number of element types
-    neuron : list[int]
-            Number of neurons in each hidden layers of the embedding net
-    tebd_dim : int
-            Dimension of the type embedding
-    tebd_input_mode : str
-            The input mode of the type embedding. Supported modes are ["concat", "strip"].
-            - "concat": Concatenate the type embedding with the smoothed angular information as the union input for the embedding network.
-            - "strip": Use a separated embedding network for the type embedding and combine the output with the angular embedding network output.
-    resnet_dt
-            Time-step `dt` in the resnet construction:
-            y = x + dt * \phi (Wx + b)
-    set_davg_zero
-            Set the shift of embedding net input to zero.
-    activation_function
-            The activation function in the embedding net. Supported options are |ACTIVATION_FN|
-    env_protection: float
-            Protection parameter to prevent division by zero errors during environment matrix calculations.
-    exclude_types : List[Tuple[int, int]]
-            The excluded pairs of types which have no interaction with each other.
-            For example, `[[0, 1]]` means no interaction between type 0 and type 1.
-    precision
-            The precision of the embedding net parameters. Supported options are |PRECISION|
-    trainable
-            If the weights of embedding net are trainable.
-    seed
-            Random seed for initializing the network parameters.
-    type_map: List[str], Optional
-            A list of strings. Give the name to each type of atoms.
-    concat_output_tebd: bool
-            Whether to concat type embedding at the output of the descriptor.
-    use_econf_tebd: bool, Optional
-            Whether to use electronic configuration type embedding.
-    use_tebd_bias : bool, Optional
-            Whether to use bias in the type embedding layer.
-    smooth: bool
-            Whether to use smooth process in calculation.
-
-    """
-
     def __init__(
         self,
         rcut: float,
@@ -145,8 +93,15 @@ class DescrptSeTTebd(BaseDescriptor, torch.nn.Module):
         use_econf_tebd: bool = False,
         use_tebd_bias=False,
         smooth: bool = True,
+        # not implemented
+        spin=None,
     ):
         super().__init__()
+        # Ensure compatibility with the deprecated stripped_type_embedding option.
+        if spin is not None:
+            raise NotImplementedError("old implementation of spin is not supported.")
+
+        del spin
         self.se_ttebd = DescrptBlockSeTTebd(
             rcut,
             rcut_smth,
@@ -174,7 +129,7 @@ class DescrptSeTTebd(BaseDescriptor, torch.nn.Module):
             seed=child_seed(seed, 2),
             use_econf_tebd=use_econf_tebd,
             type_map=type_map,
-            use_tebd_bias=use_tebd_bias,
+            bias=use_tebd_bias,
         )
         self.tebd_dim = tebd_dim
         self.concat_output_tebd = concat_output_tebd
@@ -361,12 +316,12 @@ class DescrptSeTTebd(BaseDescriptor, torch.nn.Module):
             "type_embedding": self.type_embedding.embedding.serialize(),
             "exclude_types": obj.exclude_types,
             "env_protection": obj.env_protection,
-            "smooth": self.smooth,
             "@variables": {
                 "davg": obj["davg"].detach().cpu().numpy(),
                 "dstd": obj["dstd"].detach().cpu().numpy(),
             },
             "trainable": self.trainable,
+            "spin": None,
         }
         if obj.tebd_input_mode in ["strip"]:
             data.update({"embeddings_strip": obj.filter_layers_strip.serialize()})
@@ -702,8 +657,8 @@ class DescrptBlockSeTTebd(DescriptorBlock):
         self.stats = env_mat_stat.stats
         mean, stddev = env_mat_stat()
         if not self.set_davg_zero:
-            self.mean.copy_(torch.tensor(mean, device=env.DEVICE))  # pylint: disable=no-explicit-dtype
-        self.stddev.copy_(torch.tensor(stddev, device=env.DEVICE))  # pylint: disable=no-explicit-dtype
+            self.mean.copy_(torch.tensor(mean, device=env.DEVICE))
+        self.stddev.copy_(torch.tensor(stddev, device=env.DEVICE))
 
     def get_stats(self) -> Dict[str, StatItem]:
         """Get the statistics of the descriptor."""
@@ -824,30 +779,16 @@ class DescrptBlockSeTTebd(DescriptorBlock):
             ss = torch.concat([ss, nlist_tebd_i, nlist_tebd_j], dim=-1)
             # nfnl x nt_i x nt_j x ng
             gg = self.filter_layers.networks[0](ss)
+            # nfnl x ng
+            res_ij = torch.einsum("ijk,ijkm->im", env_ij, gg)
+            res_ij = res_ij * (1.0 / float(self.nnei) / float(self.nnei))
+            # nf x nl x ng
+            result = res_ij.view(-1, nloc, self.filter_neuron[-1])
         elif self.tebd_input_mode in ["strip"]:
-            # nfnl x nt_i x nt_j x ng
-            gg_s = self.filter_layers.networks[0](ss)
-            assert self.filter_layers_strip is not None
-            # nfnl x nt_i x nt_j x (tebd_dim * 2)
-            tt = torch.concat([nlist_tebd_i, nlist_tebd_j], dim=-1)
-            # nfnl x nt_i x nt_j x ng
-            gg_t = self.filter_layers_strip.networks[0](tt)
-            if self.smooth:
-                gg_t = (
-                    gg_t
-                    * sw.reshape(nfnl, self.nnei, 1, 1)
-                    * sw.reshape(nfnl, 1, self.nnei, 1)
-                )
-            # nfnl x nt_i x nt_j x ng
-            gg = gg_s * gg_t + gg_s
+            raise NotImplementedError
         else:
             raise NotImplementedError
 
-        # nfnl x ng
-        res_ij = torch.einsum("ijk,ijkm->im", env_ij, gg)
-        res_ij = res_ij * (1.0 / float(self.nnei) / float(self.nnei))
-        # nf x nl x ng
-        result = res_ij.view(nframes, nloc, self.filter_neuron[-1])
         return (
             result.to(dtype=env.GLOBAL_PT_FLOAT_PRECISION),
             None,
