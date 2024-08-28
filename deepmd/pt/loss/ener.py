@@ -120,7 +120,7 @@ class EnergyStdLoss(TaskLoss):
         self.use_l1_all = use_l1_all
         self.inference = inference
 
-    def forward(self, input_dict, model, label, natoms, learning_rate, mae=False):
+    def forward(self, input_dict, model, label, natoms, learning_rate, mae=False, stat="train"):
         """Return loss on energy and force.
 
         Parameters

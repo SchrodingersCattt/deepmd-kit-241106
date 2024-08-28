@@ -845,6 +845,9 @@ def test_property(
         mae_aproperty = mae(diff_aproperty)
         rmse_aproperty = rmse(diff_aproperty)
 
+    np.save("true", test_data["property"][:numb_test])
+    np.save("predict", property)
+
     log.info(f"# number of test data : {numb_test:d} ")
 
     log.info(f"PROPERTY MAE            : {mae_property:e} Occupation/eV")

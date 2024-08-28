@@ -133,7 +133,7 @@ def get_trainer(
                         pass
                 else:
                     Path(stat_file_path_single).mkdir()
-            stat_file_path_single = DPPath(stat_file_path_single, "a")
+            stat_file_path_single = DPPath(stat_file_path_single, "r")
 
         # validation and training data
         # avoid the same batch sequence among devices

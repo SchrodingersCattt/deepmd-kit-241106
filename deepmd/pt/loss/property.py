@@ -16,6 +16,7 @@ from deepmd.pt.utils import (
 from deepmd.utils.data import (
     DataRequirementItem,
 )
+import numpy as np
 
 log = logging.getLogger(__name__)
 
@@ -24,10 +25,13 @@ class PropertyLoss(TaskLoss):
     def __init__(
         self,
         task_dim,
+        type_map,
         loss_func: str = "smooth_mae",
         metric: list = ["mae"],
         beta: float = 1.00,
         intensive: bool = False,
+        coord_noise: float = 0.0,
+        box_noise: float = 0.0,
         **kwargs,
     ):
         r"""Construct a layer to compute loss on property.
@@ -49,8 +53,11 @@ class PropertyLoss(TaskLoss):
         self.metric = metric
         self.beta = beta
         self.intensive = intensive
+        self.coord_noise = coord_noise
+        self.box_noise = box_noise
+        self.type_map = type_map
 
-    def forward(self, input_dict, model, label, natoms, learning_rate=0.0, mae=False):
+    def forward(self, input_dict, model, label, natoms, learning_rate=0.0, mae=False, stat="train"):
         """Return loss on properties .
 
         Parameters
@@ -73,6 +80,56 @@ class PropertyLoss(TaskLoss):
         more_loss: dict[str, torch.Tensor]
             Other losses for display.
         """
+        
+        if stat == "train":
+            if (self.coord_noise > 0) or (self.box_noise > 0):
+                import dpdata
+                nloc = input_dict["atype"].shape[1]
+                nbz = input_dict["atype"].shape[0]
+                mask_num = nloc # need to discuss
+                new_coord = []
+                new_box = []
+                for ii in range(nbz):
+                    # 提取每个system
+                    frame_data = {}
+                    frame_data["orig"] = np.array([0, 0, 0])
+                    frame_data['atom_names'] = self.type_map
+                    frame_data['atom_numbs'] = np.zeros(len(self.type_map),dtype=int).tolist()
+                    frame_data['atom_types'] = input_dict["atype"][ii].cpu().numpy()
+                    for jj in frame_data['atom_types']:
+                        frame_data['atom_numbs'][jj] += 1
+                    frame_data['cells'] = np.array([input_dict["box"][ii].reshape([3,3]).tolist()])
+                    frame_data['coords'] = np.array([input_dict["coord"][ii].tolist()])
+                    frame = dpdata.System(data=frame_data, type_map=self.type_map)
+                    # 加扰动
+                    new_frame = frame.perturb(pert_num=1,atom_pert_distance=self.coord_noise,cell_pert_fraction=self.box_noise)
+                    # 转化成input_dict
+                    # dict_keys(['coord', 'atype', 'box', 'do_atomic_virial', 'fparam', 'aparam']) 
+                    # input_dict["coord"] : device='cuda:0' dtype=torch.float64 torch.Size([8, 4, 3])
+                    # input_dict["box"]:  dtype=torch.float64  torch.Size([8, 9])
+                    # new_frame["cells"]: numpy (1, 3, 3) 
+                    # new_frame["coords"]: numpy (1, 4, 3)
+                    new_coord.append(new_frame["coords"].reshape(-1,3))
+                    new_box.append(new_frame["cells"].reshape(9))
+                new_coord = np.array(new_coord)
+                new_box = np.array(new_box)
+                # new_coord: 8,4,3
+                # new_box: 8,9
+                input_dict["coord"] = torch.tensor(new_coord, dtype=env.GLOBAL_PT_FLOAT_PRECISION, device=env.DEVICE)
+                input_dict["box"] = torch.tensor(new_box, dtype=env.GLOBAL_PT_FLOAT_PRECISION)
+
+                '''
+                for ii in range(nbz):
+                    noise_on_coord = 0.0
+                    coord_mask_res = np.random.choice(range(nloc), mask_num, replace=False).tolist()
+                    coord_mask = np.isin(range(nloc), coord_mask_res) # nloc
+                    noise_on_coord = np.random.uniform(
+                        low=-0.5, high=0.5, size=(mask_num, 3)
+                    )
+                    noise_on_coord = torch.tensor(noise_on_coord, dtype=env.GLOBAL_PT_FLOAT_PRECISION, device=env.DEVICE) # mask_num 3
+                    input_dict["coord"][ii][coord_mask ,:] += noise_on_coord # nbz mask_num 3 //
+                '''
+        
         model_pred = model(**input_dict)
         assert label["property"].shape[-1] == self.task_dim
         assert model_pred["property"].shape[-1] == self.task_dim

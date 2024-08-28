@@ -284,6 +284,7 @@ class Trainer:
                 config["learning_rate"]["start_lr"],
                 len(model_params["type_map"]),
                 self.model,
+                model_params["type_map"],
             )
         else:
             self.loss = {}
@@ -295,7 +296,7 @@ class Trainer:
                     lr_param = config["learning_rate"]["start_lr"]
                 ntypes = len(model_params["model_dict"][model_key]["type_map"])
                 self.loss[model_key] = get_loss(
-                    loss_param, lr_param, ntypes, self.model[model_key]
+                    loss_param, lr_param, ntypes, self.model[model_key], model_params["model_dict"][model_key]["type_map"]
                 )
 
         # Data
@@ -804,6 +805,7 @@ class Trainer:
                             cur_lr=pref_lr,
                             label=label_dict,
                             task_key=_task_key,
+                            stat = "valid"
                         )
                         # more_loss.update({"rmse": math.sqrt(loss)})
                         natoms = int(input_dict["atype"].shape[-1])
@@ -1042,9 +1044,11 @@ class Trainer:
             for f in checkpoint_dir.glob("*.pt")
             if not f.is_symlink() and f.name.startswith(self.save_ckpt)
         ]
+        '''
         if len(checkpoint_files) > self.max_ckpt_keep:
             checkpoint_files.sort(key=lambda x: x.stat().st_mtime)
             checkpoint_files[0].unlink()
+        '''
 
     def get_data(self, is_train=True, task_key="Default"):
         if not self.multi_task:
@@ -1212,7 +1216,7 @@ def get_additional_data_requirement(_model):
     return additional_data_requirement
 
 
-def get_loss(loss_params, start_lr, _ntypes, _model):
+def get_loss(loss_params, start_lr, _ntypes, _model, type_map):
     loss_type = loss_params.get("type", "ener")
     if loss_type == "ener":
         loss_params["starter_learning_rate"] = start_lr
@@ -1244,6 +1248,7 @@ def get_loss(loss_params, start_lr, _ntypes, _model):
         task_dim = _model.get_task_dim()
         loss_params["task_dim"] = task_dim
         loss_params["intensive"] = _model.get_intensive()
+        loss_params["type_map"] = type_map
         return PropertyLoss(**loss_params)
     else:
         raise NotImplementedError

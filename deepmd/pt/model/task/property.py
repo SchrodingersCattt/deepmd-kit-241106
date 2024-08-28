@@ -44,6 +44,7 @@ class PropertyFittingNet(InvarFitting):
         neuron: List[int] = [128, 128, 128],
         bias_atom_p: Optional[torch.Tensor] = None,
         intensive: bool = False,
+        bias: bool = False,
         resnet_dt: bool = True,
         numb_fparam: int = 0,
         numb_aparam: int = 0,
@@ -55,6 +56,7 @@ class PropertyFittingNet(InvarFitting):
     ):
         self.task_dim = task_dim
         self.intensive = intensive
+        self.bias = bias
         super().__init__(
             var_name="property",
             ntypes=ntypes,

@@ -148,6 +148,7 @@ class ModelWrapper(torch.nn.Module):
         do_atomic_virial=False,
         fparam: Optional[torch.Tensor] = None,
         aparam: Optional[torch.Tensor] = None,
+        stat: str = "train",
     ):
         if not self.multi_task:
             task_key = "Default"
@@ -180,6 +181,7 @@ class ModelWrapper(torch.nn.Module):
                 label,
                 natoms=natoms,
                 learning_rate=cur_lr,
+                stat = stat,
             )
             return model_pred, loss, more_loss
 
