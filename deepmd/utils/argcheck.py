@@ -2392,6 +2392,9 @@ def loss_property():
     doc_loss_func = "The loss function to minimize, such as 'mae','smooth_mae'."
     doc_metric = "The metric for display. This list can include 'smooth_mae', 'mae', 'mse' and 'rmse'."
     doc_beta = "The 'beta' parameter in 'smooth_mae' loss."
+    doc_coord_noise = "The noise added on coordinates"
+    doc_box_noise = "The noise added on box"
+    doc_pert_prop = "The prop of atoms that are perturbed"
     return [
         Argument(
             "loss_func",
@@ -2414,6 +2417,9 @@ def loss_property():
             default=1.00,
             doc=doc_beta,
         ),
+        Argument("coord_noise", float, optional=True, default=0.0, doc=doc_coord_noise),
+        Argument("box_noise", float, optional=True, default=0.0, doc=doc_box_noise),
+        Argument("pert_prop", float, optional=True, default=1.0, doc=doc_pert_prop)
     ]
 
 
