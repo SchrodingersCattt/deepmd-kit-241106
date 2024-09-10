@@ -51,3 +51,39 @@ class LearningRateExp:
         if step_lr < self.min_lr:
             step_lr = self.min_lr
         return step_lr
+
+class LearningRateCos:
+    def __init__(
+        self,
+        start_lr,
+        stop_lr,
+        num_steps,
+        warmup_steps,
+        **kwargs,
+    ):
+        """
+        Construct an exponential-decayed learning rate.
+
+        Parameters
+        ----------
+        start_lr
+            The learning rate at the start of the training.
+        stop_lr
+            The desired learning rate at the end of the training.
+            When decay_rate is explicitly set, this value will serve as
+            the minimum learning rate during training. In other words,
+            if the learning rate decays below stop_lr, stop_lr will be applied instead.
+        stop_steps
+            The total training steps for learning rate scheduler.
+        """
+        self.start_lr = start_lr
+        self.min_lr = stop_lr
+        self.num_steps = num_steps
+        self.warmup_steps = warmup_steps
+
+    def value(self, step):
+        """Get the learning rate at the given step."""
+        step_lr = 0.5 * (1 + np.cos(np.pi * step / (self.num_steps - self.warmup_steps))) * (self.start_lr - self.min_lr) + self.min_lr 
+        if step_lr < self.min_lr:
+            step_lr = self.min_lr
+        return step_lr

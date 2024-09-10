@@ -58,6 +58,7 @@ from deepmd.pt.utils.env import (
 )
 from deepmd.pt.utils.learning_rate import (
     LearningRateExp,
+    LearningRateCos,
 )
 from deepmd.pt.utils.stat import (
     make_stat_input,
@@ -249,11 +250,16 @@ class Trainer:
             return get_sample
 
         def get_lr(lr_params):
-            assert (
-                lr_params.get("type", "exp") == "exp"
-            ), "Only learning rate `exp` is supported!"
-            lr_params["stop_steps"] = self.num_steps - self.warmup_steps
-            lr_exp = LearningRateExp(**lr_params)
+            #assert (
+            #    lr_params.get("type", "exp") == "exp"
+            #), "Only learning rate `exp` is supported!"
+            if lr_params.get("type", "exp") == "exp":
+                lr_params["stop_steps"] = self.num_steps - self.warmup_steps
+                lr_exp = LearningRateExp(**lr_params)
+            elif lr_params.get("type", "exp") == "cos":
+                lr_params["num_steps"] = self.num_steps
+                lr_params["warmup_steps"] = self.warmup_steps
+                lr_exp = LearningRateCos(**lr_params)
             return lr_exp
 
         # Optimizer
@@ -378,6 +384,30 @@ class Trainer:
                     )
 
         # Learning rate
+        from IPython import embed
+        # save layer names
+        layer_names = []
+        for idx, (name, param) in enumerate(self.model.named_parameters()):
+            layer_names.append(name)
+        layer_names.reverse()
+
+        lr = config["learning_rate"]["start_lr"]
+        lr_mult = 0.9
+
+        parameters = []
+        names = []
+        prev_group_name = layer_names[0].split(".")[0]
+
+        for idx, name in enumerate(layer_names):
+            cur_group_name = ".".join(name.split(".")[:5])
+            if cur_group_name != prev_group_name and "repformers.layers" in cur_group_name:
+                lr *= lr_mult
+            prev_group_name = cur_group_name
+            parameters += [{"params": [p for n,p in self.model.named_parameters() if n == name and p.requires_grad],
+                            "lr": lr}]
+            names += [{"name": name,
+                      "lr": lr}]
+
         self.warmup_steps = training_params.get("warmup_steps", 0)
         self.gradient_max_norm = training_params.get("gradient_max_norm", 0.0)
         assert (
@@ -590,6 +620,7 @@ class Trainer:
             self.optimizer = torch.optim.Adam(
                 self.wrapper.parameters(), lr=self.lr_exp.start_lr
             )
+            embed()
             if optimizer_state_dict is not None and self.restart_training:
                 self.optimizer.load_state_dict(optimizer_state_dict)
             self.scheduler = torch.optim.lr_scheduler.LambdaLR(

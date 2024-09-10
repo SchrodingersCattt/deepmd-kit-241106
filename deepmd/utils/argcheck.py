@@ -1997,6 +1997,9 @@ def linear_ener_model_args() -> Argument:
 
 
 #  --- Learning rate configurations: --- #
+lr_args_plugin = ArgsPlugin()
+
+@lr_args_plugin.register("exp")
 def learning_rate_exp():
     doc_start_lr = "The learning rate at the start of the training."
     doc_stop_lr = (
@@ -2028,13 +2031,28 @@ def learning_rate_exp():
     ]
     return args
 
+@lr_args_plugin.register("cos")
+def learning_rate_cos():
+    doc_start_lr = "The learning rate at the start of the training."
+    doc_stop_lr = (
+        "The desired learning rate at the end of the training. "
+        f"When decay_rate {doc_only_pt_supported}is explicitly set, "
+        "this value will serve as the minimum learning rate during training. "
+        "In other words, if the learning rate decays below stop_lr, stop_lr will be applied instead."
+    )
+
+    args = [
+        Argument("start_lr", float, optional=True, default=1e-3, doc=doc_start_lr),
+        Argument("stop_lr", float, optional=True, default=1e-8, doc=doc_stop_lr)
+    ]
+    return args
 
 def learning_rate_variant_type_args():
     doc_lr = "The type of the learning rate."
 
     return Variant(
         "type",
-        [Argument("exp", dict, learning_rate_exp())],
+        lr_args_plugin.get_all_argument(),
         optional=True,
         default_tag="exp",
         doc=doc_lr,
