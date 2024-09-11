@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
+from IPython import embed
 import functools
 import logging
 import time
@@ -585,10 +586,31 @@ class Trainer:
 
         # TODO add optimizers for multitask
         # author: iProzd
+        layer_names = []
+        for (name, param) in self.wrapper.named_parameters():
+            layer_names.append(name)
+        layer_names.reverse()
+        lr = config["learning_rate"]["start_lr"]
+        lr_mult = 0.9
+        parameters = []
+        names = [] #tmp
+        prev_group_name = ".".join(layer_names[0].split(".")[:7])
+
+        for name in layer_names:
+            cur_group_name = ".".join(name.split(".")[:7])
+            if cur_group_name != prev_group_name and "repformers.layers" in cur_group_name:
+                lr *= lr_mult
+            prev_group_name = cur_group_name
+            parameters += [{"params": [p for n,p in self.wrapper.named_parameters() if n==name and p.requires_grad],
+                            "lr": lr}]
+            names += [{"name": name,
+                       "lr": lr}]
+
         if self.opt_type == "Adam":
-            self.optimizer = torch.optim.Adam(
-                self.wrapper.parameters(), lr=self.lr_exp.start_lr
-            )
+            #self.optimizer = torch.optim.Adam(
+            #    self.wrapper.parameters(), lr=self.lr_exp.start_lr
+            #)
+            self.optimizer = torch.optim.Adam(parameters)
             if optimizer_state_dict is not None and self.restart_training:
                 self.optimizer.load_state_dict(optimizer_state_dict)
             self.scheduler = torch.optim.lr_scheduler.LambdaLR(
@@ -699,6 +721,7 @@ class Trainer:
                 with torch.device("cpu"):
                     self.optimizer.step()
                 self.scheduler.step()
+                embed()
             elif self.opt_type == "LKF":
                 if isinstance(self.loss, EnergyStdLoss):
                     KFOptWrapper = KFOptimizerWrapper(
