@@ -2022,10 +2022,18 @@ def learning_rate_exp():
         "If this is provided, it will be used directly as the decay rate for learning rate "
         "instead of calculating it through interpolation between start_lr and stop_lr."
     )
+    doc_repformer_lr_factor = (
+        "The initial learning rate factor in different repformer layer. "
+        "It is only useful when descriptor is dpa2. "
+        "When type is `int`, for each deeper layer, the initial learning rate of the layer is multiplied by this number."
+        "When type is `list`, the length of the list must be equal to the number of repformer layers, "
+        "each element in this list is the initial learning rate for each repformer layer"
+    )
 
     args = [
         Argument("start_lr", float, optional=True, default=1e-3, doc=doc_start_lr),
         Argument("stop_lr", float, optional=True, default=1e-8, doc=doc_stop_lr),
+        Argument("repformer_lr_factor", [float,list], optional=True, default=None, doc=doc_repformer_lr_factor),
         Argument("decay_steps", int, optional=True, default=5000, doc=doc_decay_steps),
         Argument(
             "decay_rate",
