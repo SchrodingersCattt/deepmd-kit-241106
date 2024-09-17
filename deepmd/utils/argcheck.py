@@ -4,6 +4,7 @@ import logging
 import warnings
 from typing import (
     Callable,
+    Dict,
     List,
     Optional,
     Union,
@@ -1771,6 +1772,7 @@ def model_args(exclude_hybrid=False):
     doc_spin = "The settings for systems with spin."
     doc_atom_exclude_types = "Exclude the atomic contribution of the listed atom types"
     doc_pair_exclude_types = "The atom pairs of the listed types are not treated to be neighbors, i.e. they do not see each other."
+    doc_preset_out_bias = "The preset bias of the atomic output. Is provided as a dict. Taking the energy model that has three atom types for example, the preset_out_bias may be given as `{ 'energy': [null, 0., 1.] }`. In this case the bias of type 1 and 2 are set to 0. and 1., respectively.The set_davg_zero should be set to true."
     doc_finetune_head = (
         "The chosen fitting net to fine-tune on, when doing multi-task fine-tuning. "
         "If not set or set to 'RANDOM', the fitting net will be randomly initialized."
@@ -1832,6 +1834,13 @@ def model_args(exclude_hybrid=False):
                 optional=True,
                 default=[],
                 doc=doc_only_pt_supported + doc_atom_exclude_types,
+            ),
+            Argument(
+                "preset_out_bias",
+                Dict[str, Optional[float]],
+                optional=True,
+                default=None,
+                doc=doc_only_pt_supported + doc_preset_out_bias,
             ),
             Argument(
                 "srtab_add_bias",
@@ -2013,10 +2022,18 @@ def learning_rate_exp():
         "If this is provided, it will be used directly as the decay rate for learning rate "
         "instead of calculating it through interpolation between start_lr and stop_lr."
     )
+    doc_repformer_lr_factor = (
+        "The initial learning rate factor in different repformer layer. "
+        "It is only useful when descriptor is dpa2. "
+        "When type is `int`, for each deeper layer, the initial learning rate of the layer is multiplied by this number."
+        "When type is `list`, the length of the list must be equal to the number of repformer layers, "
+        "each element in this list is the initial learning rate for each repformer layer"
+    )
 
     args = [
         Argument("start_lr", float, optional=True, default=1e-3, doc=doc_start_lr),
         Argument("stop_lr", float, optional=True, default=1e-8, doc=doc_stop_lr),
+        Argument("repformer_lr_factor", [float,list], optional=True, default=None, doc=doc_repformer_lr_factor),
         Argument("decay_steps", int, optional=True, default=5000, doc=doc_decay_steps),
         Argument(
             "decay_rate",
