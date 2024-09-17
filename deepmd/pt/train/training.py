@@ -607,10 +607,10 @@ class Trainer:
                        "lr": lr}]
 
         if self.opt_type == "Adam":
-            #self.optimizer = torch.optim.Adam(
-            #    self.wrapper.parameters(), lr=self.lr_exp.start_lr
-            #)
-            self.optimizer = torch.optim.Adam(parameters)
+            self.optimizer = torch.optim.Adam(
+                self.wrapper.parameters(), lr=self.lr_exp.start_lr
+            )
+            #self.optimizer = torch.optim.Adam(parameters)
             if optimizer_state_dict is not None and self.restart_training:
                 self.optimizer.load_state_dict(optimizer_state_dict)
             self.scheduler = torch.optim.lr_scheduler.LambdaLR(
@@ -721,7 +721,6 @@ class Trainer:
                 with torch.device("cpu"):
                     self.optimizer.step()
                 self.scheduler.step()
-                embed()
             elif self.opt_type == "LKF":
                 if isinstance(self.loss, EnergyStdLoss):
                     KFOptWrapper = KFOptimizerWrapper(
