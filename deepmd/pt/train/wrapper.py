@@ -67,6 +67,7 @@ class ModelWrapper(torch.nn.Module):
         some seperated parameters (e.g. mean and stddev) will be re-calculated across different classes.
         """
         supported_types = ["descriptor", "fitting_net"]
+        from IPython import embed
         for shared_item in shared_links:
             class_name = shared_links[shared_item]["type"]
             shared_base = shared_links[shared_item]["links"][0]
