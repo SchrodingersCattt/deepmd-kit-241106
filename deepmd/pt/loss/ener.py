@@ -186,6 +186,12 @@ class EnergyStdLoss(TaskLoss):
                 more_loss["rmse_e"] = self.display_if_exist(
                     rmse_e.detach(), find_energy
                 )
+                mae_e = torch.mean(torch.abs(energy_pred - energy_label)) * atom_norm
+                more_loss["mae_e"] = self.display_if_exist(mae_e.detach(), find_energy)
+                mae_e_all = torch.mean(torch.abs(energy_pred - energy_label))
+                more_loss["mae_e_all"] = self.display_if_exist(
+                    mae_e_all.detach(), find_energy
+                )
                 # more_loss['log_keys'].append('rmse_e')
             else:  # use l1 and for all atoms
                 l1_ener_loss = F.l1_loss(
@@ -240,6 +246,10 @@ class EnergyStdLoss(TaskLoss):
                     rmse_f = l2_force_loss.sqrt()
                     more_loss["rmse_f"] = self.display_if_exist(
                         rmse_f.detach(), find_force
+                    )
+                    mae_f = torch.mean(torch.abs(diff_f))
+                    more_loss["mae_f"] = self.display_if_exist(
+                        mae_f.detach(), find_force
                     )
                 else:
                     l1_force_loss = F.l1_loss(force_label, force_pred, reduction="none")
