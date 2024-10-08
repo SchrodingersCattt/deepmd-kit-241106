@@ -522,6 +522,8 @@ def compute_output_stats_global(
         log.info(
             f"RMSE of {kk} per atom after linear regression is: {rmse_ae} in the unit of {kk}."
         )
+        with open("rmse_after_linear", "a") as f:
+            f.write(f"RMSE of {kk} per atom after linear regression is: {rmse_ae} in the unit of {kk}.")
     return bias_atom_e, std_atom_e
 
 
