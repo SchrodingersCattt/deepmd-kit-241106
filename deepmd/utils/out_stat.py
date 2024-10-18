@@ -3,7 +3,6 @@
 
 from typing import (
     Optional,
-    Tuple,
 )
 
 import numpy as np
@@ -17,7 +16,7 @@ def compute_stats_from_redu(
     natoms: np.ndarray,
     assigned_bias: Optional[np.ndarray] = None,
     rcond: Optional[float] = None,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Compute the output statistics.
 
     Given the reduced output value and the number of atoms for each atom,
@@ -96,7 +95,7 @@ def compute_stats_from_redu(
 def compute_stats_from_atomic(
     output: np.ndarray,
     atype: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Compute the output statistics.
 
     Given the output value and the type of atoms,
