@@ -24,6 +24,7 @@ class PropertyLoss(TaskLoss):
         loss_func: str = "smooth_mae",
         metric: list = ["mae"],
         beta: float = 1.00,
+        split_display: bool = False,
         **kwargs,
     ):
         r"""Construct a layer to compute loss on property.
@@ -44,6 +45,7 @@ class PropertyLoss(TaskLoss):
         self.loss_func = loss_func
         self.metric = metric
         self.beta = beta
+        self.split_display = split_display
 
     def forward(self, input_dict, model, label, natoms, learning_rate=0.0, mae=False):
         """Return loss on properties .
@@ -104,33 +106,63 @@ class PropertyLoss(TaskLoss):
             raise RuntimeError(f"Unknown loss function : {self.loss_func}")
 
         # more loss
-        if "smooth_mae" in self.metric:
-            more_loss["smooth_mae"] = F.smooth_l1_loss(
-                label["property"],
-                model_pred["property"],
-                reduction="mean",
-                beta=self.beta,
-            ).detach()
-        if "mae" in self.metric:
-            more_loss["mae"] = F.l1_loss(
-                label["property"],
-                model_pred["property"],
-                reduction="mean",
-            ).detach()
-        if "mse" in self.metric:
-            more_loss["mse"] = F.mse_loss(
-                label["property"],
-                model_pred["property"],
-                reduction="mean",
-            ).detach()
-        if "rmse" in self.metric:
-            more_loss["rmse"] = torch.sqrt(
-                F.mse_loss(
+        if self.split_display:
+            for jj in range(self.task_dim):
+                if "smooth_mae" in self.metric:
+                    more_loss[f"smooth_mae_{jj}"] = F.smooth_l1_loss(
+                        label["property"][:,jj],
+                        model_pred["property"][:,jj],
+                        reduction="mean",
+                        beta=self.beta,
+                    ).detach()
+                if "mae" in self.metric:
+                    more_loss[f"mae_{jj}"] = F.l1_loss(
+                        label["property"][:,jj],
+                        model_pred["property"][:,jj],
+                        reduction="mean",
+                    ).detach()
+                if "mse" in self.metric:
+                    more_loss[f"mse_{jj}"] = F.mse_loss(
+                        label["property"][:,jj],
+                        model_pred["property"][:,jj],
+                        reduction="mean",
+                    ).detach()
+                if "rmse" in self.metric:
+                    more_loss[f"rmse_{jj}"] = torch.sqrt(
+                        F.mse_loss(
+                            label["property"][:,jj],
+                            model_pred["property"][:,jj],
+                            reduction="mean",
+                        )
+                    ).detach()
+        else:
+            if "smooth_mae" in self.metric:
+                more_loss["smooth_mae"] = F.smooth_l1_loss(
                     label["property"],
                     model_pred["property"],
                     reduction="mean",
-                )
-            ).detach()
+                    beta=self.beta,
+                ).detach()
+            if "mae" in self.metric:
+                more_loss["mae"] = F.l1_loss(
+                    label["property"],
+                    model_pred["property"],
+                    reduction="mean",
+                ).detach()
+            if "mse" in self.metric:
+                more_loss["mse"] = F.mse_loss(
+                    label["property"],
+                    model_pred["property"],
+                    reduction="mean",
+                ).detach()
+            if "rmse" in self.metric:
+                more_loss["rmse"] = torch.sqrt(
+                    F.mse_loss(
+                        label["property"],
+                        model_pred["property"],
+                        reduction="mean",
+                    )
+                ).detach()
 
         return model_pred, loss, more_loss
 

@@ -2402,6 +2402,7 @@ def loss_property():
     doc_loss_func = "The loss function to minimize, such as 'mae','smooth_mae'."
     doc_metric = "The metric for display. This list can include 'smooth_mae', 'mae', 'mse' and 'rmse'."
     doc_beta = "The 'beta' parameter in 'smooth_mae' loss."
+    doc_split_display = "If display split property loss."
     return [
         Argument(
             "loss_func",
@@ -2423,6 +2424,13 @@ def loss_property():
             optional=True,
             default=1.00,
             doc=doc_beta,
+        ),
+        Argument(
+            "split_display",
+            bool,
+            optional=True,
+            default=False,
+            doc=doc_split_display,
         ),
     ]
 

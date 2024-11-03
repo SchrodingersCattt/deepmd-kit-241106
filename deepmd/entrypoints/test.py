@@ -834,22 +834,28 @@ def test_property(
         aproperty = aproperty.reshape([numb_test, natoms * dp.task_dim])
 
     diff_property = property - test_data["property"][:numb_test]
+    mae_split_property = []
+    rmse_split_property = []
+
     mae_property = mae(diff_property)
     rmse_property = rmse(diff_property)
+    for jj in range(dp.task_dim):
+        mae_split_property.append(mae(diff_property[:, jj]))
+        rmse_split_property.append(rmse(diff_property[:, jj]))
 
     if has_atom_property:
-        diff_aproperty = aproperty - test_data["atom_property"][:numb_test]
-        mae_aproperty = mae(diff_aproperty)
-        rmse_aproperty = rmse(diff_aproperty)
+        #diff_aproperty = aproperty - test_data["atom_property"][:numb_test]
+        #mae_aproperty = mae(diff_aproperty)
+        #rmse_aproperty = rmse(diff_aproperty)
+        raise RuntimeError("Property dp test not support atom_property yet")
 
     log.info(f"# number of test data : {numb_test:d} ")
 
+    for jj in range(dp.task_dim):
+        log.info(f"PROPERTY MAE {jj:d} : {mae_split_property[jj]:e} units")
+        log.info(f"PROPERTY RMSE {jj:d} : {rmse_split_property[jj]:e} units")
     log.info(f"PROPERTY MAE            : {mae_property:e} units")
     log.info(f"PROPERTY RMSE           : {rmse_property:e} units")
-
-    if has_atom_property:
-        log.info(f"Atomic PROPERTY MAE     : {mae_aproperty:e} units")
-        log.info(f"Atomic PROPERTY RMSE    : {rmse_aproperty:e} units")
 
     if detail_file is not None:
         detail_path = Path(detail_file)
@@ -867,24 +873,14 @@ def test_property(
                 append=append_detail,
             )
 
-        if has_atom_property:
-            for ii in range(numb_test):
-                test_out = test_data["atom_property"][ii].reshape(-1, 1)
-                pred_out = aproperty[ii].reshape(-1, 1)
+    return_dict = {}
+    for jj in range(dp.task_dim):
+        return_dict[f"mae_property_{jj}"] = (mae_split_property[jj], property.shape[0])
+        return_dict[f"rmse_property_{jj}"] = (rmse_split_property[jj], property.shape[0])
+    return_dict["mae_property"] = (mae_property, property.size)
+    return_dict["rmse_property"] = (rmse_property, property.size)
 
-                frame_output = np.hstack((test_out, pred_out))
-
-                save_txt_file(
-                    detail_path.with_suffix(".aproperty.out.%.d" % ii),
-                    frame_output,
-                    header="%s - %.d: data_aproperty pred_aproperty" % (system, ii),
-                    append=append_detail,
-                )
-
-    return {
-        "mae_property": (mae_property, property.size),
-        "rmse_property": (rmse_property, property.size),
-    }
+    return return_dict
 
 
 def print_property_sys_avg(avg: dict[str, float]):
@@ -895,6 +891,10 @@ def print_property_sys_avg(avg: dict[str, float]):
     avg : np.ndarray
         array with summaries
     """
+    task_dim = int((len(avg.keys()) - 2)/2)
+    for jj in range(task_dim):
+        log.info(f"PROPERTY MAE {jj:d} : {avg[f'mae_property_{jj}']:e} units")
+        log.info(f"PROPERTY RMSE {jj:d} : {avg[f'rmse_property_{jj}']:e} units")
     log.info(f"PROPERTY MAE            : {avg['mae_property']:e} units")
     log.info(f"PROPERTY RMSE           : {avg['rmse_property']:e} units")
 
