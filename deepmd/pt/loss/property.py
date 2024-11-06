@@ -14,6 +14,8 @@ from deepmd.utils.data import (
     DataRequirementItem,
 )
 
+from typing import List
+
 log = logging.getLogger(__name__)
 
 
@@ -22,19 +24,19 @@ class PropertyLoss(TaskLoss):
         self,
         task_dim,
         loss_func: str = "smooth_mae",
-        metric: list = ["mae"],
+        metric: List[str] = ["mae"],
         beta: float = 1.00,
         split_display: bool = False,
         **kwargs,
     ):
-        r"""Construct a layer to compute loss on property.
+        """Construct a layer to compute loss on property.
 
         Parameters
         ----------
         task_dim : float
             The output dimension of property fitting net.
         loss_func : str
-            The loss function, such as "smooth_mae", "mae", "rmse".
+            The loss function, such as "smooth_mae", "mae", "rmse", "mape".
         metric : list
             The metric such as mae, rmse which will be printed.
         beta:
@@ -48,7 +50,7 @@ class PropertyLoss(TaskLoss):
         self.split_display = split_display
 
     def forward(self, input_dict, model, label, natoms, learning_rate=0.0, mae=False):
-        """Return loss on properties .
+        """Return loss on properties.
 
         Parameters
         ----------
@@ -71,6 +73,7 @@ class PropertyLoss(TaskLoss):
             Other losses for display.
         """
         model_pred = model(**input_dict)
+        
         assert label["property"].shape[-1] == self.task_dim
         assert model_pred["property"].shape[-1] == self.task_dim
         loss = torch.zeros(1, dtype=env.GLOBAL_PT_FLOAT_PRECISION, device=env.DEVICE)[0]
@@ -102,6 +105,10 @@ class PropertyLoss(TaskLoss):
                     reduction="mean",
                 )
             )
+        elif self.loss_func == "mape":
+            # Ensure predictions and labels are non-zero to avoid division by zero
+            loss += torch.mean(torch.abs((label["property"] - model_pred["property"]) / label["property"])) * 100
+            log.debug(f"loss, mape: {loss}")
         else:
             raise RuntimeError(f"Unknown loss function : {self.loss_func}")
 
@@ -135,6 +142,12 @@ class PropertyLoss(TaskLoss):
                             reduction="mean",
                         )
                     ).detach()
+                if "mape" in self.metric:
+                    more_loss[f"mape_{jj}"] = torch.mean(torch.abs(
+                        (label["property"][:, jj] - model_pred["property"][:, jj]) / label["property"][:, jj]
+                    )) * 100
+                    logging.info(f"{jj}th component: {more_loss[f'mape_{jj}']}")
+
         else:
             if "smooth_mae" in self.metric:
                 more_loss["smooth_mae"] = F.smooth_l1_loss(
@@ -163,11 +176,16 @@ class PropertyLoss(TaskLoss):
                         reduction="mean",
                     )
                 ).detach()
+            if "mape" in self.metric:
+                more_loss["mape"] = torch.mean(torch.abs(
+                    (label["property"] - model_pred["property"]) / label["property"]
+                )) * 100
+                logger.info(f"mape: {more_loss['mape']}")
 
         return model_pred, loss, more_loss
 
     @property
-    def label_requirement(self) -> list[DataRequirementItem]:
+    def label_requirement(self) -> List[DataRequirementItem]:
         """Return data label requirements needed for this loss calculation."""
         label_requirement = []
         label_requirement.append(
