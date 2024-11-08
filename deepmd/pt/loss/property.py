@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 import logging
-
+from icecream import ic
 import torch
 import torch.nn.functional as F
 
@@ -107,8 +107,7 @@ class PropertyLoss(TaskLoss):
             )
         elif self.loss_func == "mape":
             # Ensure predictions and labels are non-zero to avoid division by zero
-            loss += torch.mean(torch.abs((label["property"] - model_pred["property"]) / label["property"])) * 100
-            log.debug(f"loss, mape: {loss}")
+            loss += torch.mean(torch.abs((label["property"] - model_pred["property"]) / (label["property"] + 1e-3))) 
         else:
             raise RuntimeError(f"Unknown loss function : {self.loss_func}")
 
@@ -144,8 +143,8 @@ class PropertyLoss(TaskLoss):
                     ).detach()
                 if "mape" in self.metric:
                     more_loss[f"mape_{jj}"] = torch.mean(torch.abs(
-                        (label["property"][:, jj] - model_pred["property"][:, jj]) / label["property"][:, jj]
-                    )) * 100
+                        (label["property"][:, jj] - model_pred["property"][:, jj]) /( label["property"][:, jj] + 1e-3) 
+                    )) 
                     logging.info(f"{jj}th component: {more_loss[f'mape_{jj}']}")
 
         else:
@@ -178,9 +177,8 @@ class PropertyLoss(TaskLoss):
                 ).detach()
             if "mape" in self.metric:
                 more_loss["mape"] = torch.mean(torch.abs(
-                    (label["property"] - model_pred["property"]) / label["property"]
-                )) * 100
-                logger.info(f"mape: {more_loss['mape']}")
+                    (label["property"] - model_pred["property"]) / (label["property"] + 1e-3)
+                )) 
 
         return model_pred, loss, more_loss
 
